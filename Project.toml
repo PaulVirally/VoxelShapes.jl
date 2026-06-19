@@ -1,7 +1,7 @@
 name = "VoxelShapes"
 uuid = "e571a3b5-8c16-454b-ac54-7ac4b35e7290"
 authors = ["Paul Virally <pvirally@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
