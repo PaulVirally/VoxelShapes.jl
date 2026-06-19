@@ -1,11 +1,30 @@
 module AntiAliasing
 
 export aa, NoAntiAliasing, SuperResolutionAntiAliasing, GaussianAntiAliasing
+export SubpixelAntiAliasing, AdaptiveAntiAliasing
 
 using StaticArrays
 using ..Types
 using ..Interpolations: interp_init, interp_accumulate, interp_finalize
 
+"""
+    aa(shape, voxel_center_xyz, voxel_size_xyz, background, anti_alias) -> value
+
+Compute the rasterized value for a single voxel given an anti-aliasing strategy.
+
+Returns `background` when the voxel is outside the shape, or a blended value
+on the boundary according to the chosen `anti_alias` method.
+"""
+function aa end
+
+"""
+    NoAntiAliasing <: AbstractAntiAliasing
+
+Point-sampled rasterization with no blending.
+
+Each voxel is either fully inside the shape (returns `fill(shape, ...)`) or
+fully outside (returns `background`), tested at the voxel center.
+"""
 struct NoAntiAliasing <: AbstractAntiAliasing end
 
 function aa(shape::AbstractFillableShape, voxel_center_xyz::NTuple{3, T}, voxel_size_xyz::NTuple{3, T}, background::U, ::NoAntiAliasing) where {T, U}
@@ -15,6 +34,18 @@ function aa(shape::AbstractFillableShape, voxel_center_xyz::NTuple{3, T}, voxel_
     return background
 end
 
+"""
+    SuperResolutionAntiAliasing <: AbstractAntiAliasing
+
+Anti-aliasing by averaging over a regular sub-grid within each voxel.
+
+# Fields
+- `super_grid`: number of sub-samples along each axis. A value of `(n, n, n)`
+  produces n³ samples per voxel.
+
+Construct with `SuperResolutionAntiAliasing(n)` for an isotropic n³ grid,
+or `SuperResolutionAntiAliasing((nx, ny, nz))` for an anisotropic one.
+"""
 struct SuperResolutionAntiAliasing <: AbstractAntiAliasing
     super_grid::NTuple{3, Int}
 end
@@ -43,6 +74,19 @@ function aa(shape::AbstractFillableShape, voxel_center_xyz::NTuple{3, T}, voxel_
     return interp_finalize(interp, acc)
 end
 
+"""
+    GaussianAntiAliasing{Nx, Ny, Nz, T} <: AbstractAntiAliasing
+
+Anti-aliasing using a separable Gaussian kernel.
+
+The kernel is pre-normalized so weights sum to one. Each voxel is sampled
+at `Nx × Ny × Nz` points spaced one voxel apart, weighted by the product of
+per-axis Gaussian weights.
+
+Construct with `GaussianAntiAliasing(σ, kernel_size)` for isotropic smoothing,
+or `GaussianAntiAliasing((σx, σy, σz), (Nx, Ny, Nz))` for anisotropic.
+Kernel sizes must be odd.
+"""
 struct GaussianAntiAliasing{Nx, Ny, Nz, T} <: AbstractAntiAliasing
     kernel_data::Tuple{SVector{Nx, T}, SVector{Ny, T}, SVector{Nz, T}}
 end
@@ -75,6 +119,61 @@ function aa(shape::AbstractFillableShape, voxel_center_xyz::NTuple{3, T}, voxel_
         acc = interp_accumulate(interp, acc, val, weight)
     end
     return interp_finalize(interp, acc)
+end
+
+"""
+    SubpixelAntiAliasing <: AbstractAntiAliasing
+
+Analytic coverage estimate using the signed distance function. O(1) per voxel,
+GPU-safe.
+
+Approximates the fraction of the voxel inside the shape as a linear ramp through
+the SDF value at the voxel center, normalized by half the voxel diagonal. The
+boundary is assumed locally planar; accuracy degrades when voxel size approaches
+the surface's radius of curvature. Coverage is slightly approximate for
+anisotropic voxels.
+
+Requires `sdf(shape, point)` to be implemented.
+"""
+struct SubpixelAntiAliasing <: AbstractAntiAliasing end
+
+function aa(shape::AbstractFillableShape, vc::NTuple{3,T}, vs::NTuple{3,T}, bg::U, ::SubpixelAntiAliasing) where {T, U}
+    d = sdf(shape, vc)
+    h = oftype(d, 0.5) * sqrt(vs[1]^2 + vs[2]^2 + vs[3]^2)
+    frac = clamp(oftype(d, 0.5) - d / (2 * h), zero(d), one(d))
+    frac <= zero(d) && return bg
+    interp = interpolation(shape)
+    acc = interp_init(interp, U)
+    acc = interp_accumulate(interp, acc, fill(shape, vc, vs), frac)
+    acc = interp_accumulate(interp, acc, bg, one(frac) - frac)
+    return interp_finalize(interp, acc)
+end
+
+"""
+    AdaptiveAntiAliasing{A<:AbstractAntiAliasing} <: AbstractAntiAliasing
+
+Wrapper that skips the inner anti-aliasing stencil for voxels clearly inside or
+outside the shape.
+
+When `has_exact_sdf(shape)` is `true`, a single SDF evaluation determines
+whether the voxel is at least half a diagonal away from the surface. Only
+boundary voxels fall through to the wrapped `inner` strategy.
+
+# Fields
+- `inner`: the anti-aliasing method applied to boundary voxels
+"""
+struct AdaptiveAntiAliasing{A<:AbstractAntiAliasing} <: AbstractAntiAliasing
+    inner::A
+end
+
+function aa(shape::AbstractFillableShape, vc::NTuple{3,T}, vs::NTuple{3,T}, bg::U, a::AdaptiveAntiAliasing) where {T, U}
+    if has_exact_sdf(shape)
+        d = sdf(shape, vc)
+        h = oftype(d, 0.5) * sqrt(vs[1]^2 + vs[2]^2 + vs[3]^2)
+        d <= -h && return fill(shape, vc, vs)
+        d >= h && return bg
+    end
+    return aa(shape, vc, vs, bg, a.inner)
 end
 
 end

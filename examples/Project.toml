@@ -1,0 +1,7 @@
+[deps]
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+VoxelShapes = "e571a3b5-8c16-454b-ac54-7ac4b35e7290"
+
+[sources]
+VoxelShapes = {path = ".."}
