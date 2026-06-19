@@ -57,10 +57,10 @@ function aa(shape::AbstractFillableShape, voxel_center_xyz::NTuple{3, T}, voxel_
     acc = interp_init(interp, U)
     grid = anti_alias.super_grid
     weight = one(U) / prod(grid)
-    super_grid_stride = Tuple(voxel_size_xyz[i] / T(grid[i]) for i in 1:3)
+    super_grid_stride = ntuple(i -> voxel_size_xyz[i] / T(grid[i]), 3)
 
     half = one(T) / 2
-    offset = Tuple(-half * (one(T) - one(T) / grid[i]) * voxel_size_xyz[i] for i in 1:3)
+    offset = ntuple(i -> -half * (one(T) - one(T) / T(grid[i])) * voxel_size_xyz[i], 3)
 
     for i in 1:grid[1], j in 1:grid[2], k in 1:grid[3]
         super_voxel_center_xyz = (
@@ -68,7 +68,7 @@ function aa(shape::AbstractFillableShape, voxel_center_xyz::NTuple{3, T}, voxel_
             voxel_center_xyz[2] + offset[2] + (j - half) * super_grid_stride[2],
             voxel_center_xyz[3] + offset[3] + (k - half) * super_grid_stride[3]
         )
-        val = aa(shape, Tuple(super_voxel_center_xyz), super_grid_stride, background, NoAntiAliasing())
+        val = aa(shape, super_voxel_center_xyz, super_grid_stride, background, NoAntiAliasing())
         acc = interp_accumulate(interp, acc, val, weight)
     end
     return interp_finalize(interp, acc)
