@@ -5,6 +5,8 @@
 [![CI](https://github.com/PaulVirally/VoxelShapes.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/PaulVirally/VoxelShapes.jl/actions/workflows/CI.yml)
 [![Coverage](https://codecov.io/gh/PaulVirally/VoxelShapes.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/PaulVirally/VoxelShapes.jl)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+[![Version](https://juliahub.com/docs/General/VoxelShapes/stable/version.svg)](https://juliahub.com/ui/Packages/General/VoxelShapes)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
 ![A scene built from every available shape primitive](examples/07_showcase.png)
 
