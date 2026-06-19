@@ -3,6 +3,7 @@ using VoxelShapes
 
 makedocs(
     sitename = "VoxelShapes.jl",
+    repo = "github.com/PaulVirally/VoxelShapes.jl.git",
     modules  = [
         VoxelShapes,
         VoxelShapes.Types,
@@ -19,9 +20,9 @@ makedocs(
         VoxelShapes.Fills,
         VoxelShapes.AntiAliasing,
     ],
-    format   = Documenter.HTML(
+    format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
-        canonical  = "https://pvirally.github.io/VoxelShapes.jl",
+        canonical = "https://paulvirally.github.io/VoxelShapes.jl",
     ),
     remotes  = nothing,
     pages = [
@@ -41,6 +42,6 @@ makedocs(
 )
 
 deploydocs(
-    repo       = "github.com/pvirally/VoxelShapes.jl",
+    repo       = "github.com/PaulVirally/VoxelShapes.jl",
     devbranch  = "main",
 )
