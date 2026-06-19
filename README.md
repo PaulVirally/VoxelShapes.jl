@@ -1,5 +1,11 @@
 # VoxelShapes.jl
 
+[![Stable docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://paulvirally.github.io/VoxelShapes.jl/stable)
+[![Dev docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://paulvirally.github.io/VoxelShapes.jl/dev)
+[![CI](https://github.com/PaulVirally/VoxelShapes.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/PaulVirally/VoxelShapes.jl/actions/workflows/CI.yml)
+[![Coverage](https://codecov.io/gh/PaulVirally/VoxelShapes.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/PaulVirally/VoxelShapes.jl)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+
 ![A scene built from every available shape primitive](examples/07_showcase.png)
 
 Place geometric shapes into a 3D voxel grid. Each shape carries a fill value (or a gradient function), and you can pick how boundary voxels are blended when a surface doesn't line up with the grid. Call `Array(world)` and you get a plain Julia array.
