@@ -24,7 +24,6 @@ makedocs(
         prettyurls = get(ENV, "CI", nothing) == "true",
         canonical = "https://paulvirally.github.io/VoxelShapes.jl",
     ),
-    remotes  = nothing,
     pages = [
         "Getting started"  => "index.md",
         "Shapes"           => "shapes.md",
