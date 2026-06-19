@@ -11,7 +11,7 @@ else
 @testset "CUDA back-end" begin
 
     @testset "CuArray(world) matches Array(world) for a sphere" begin
-        sphere = FillableSphere((1.5, 1.5, 1.5), 0.6, 1.0f0)
+        sphere = FillableSphere((1.5f0, 1.5f0, 1.5f0), 0.6f0, 1.0f0)
         w = World((3, 3, 3), (1.0f0, 1.0f0, 1.0f0), [sphere], 0.0f0, NoAntiAliasing())
         cpu = Array(w)
         gpu = CuArray(w)
@@ -20,7 +20,7 @@ else
     end
 
     @testset "fill! into a preallocated CuArray matches Array(world)" begin
-        sphere = FillableSphere((1.5, 1.5, 1.5), 0.6, 1.0f0)
+        sphere = FillableSphere((1.5f0, 1.5f0, 1.5f0), 0.6f0, 1.0f0)
         w = World((3, 3, 3), (1.0f0, 1.0f0, 1.0f0), [sphere], 0.0f0, NoAntiAliasing())
         arr = CUDA.zeros(Float32, 3, 3, 3)
         fill!(arr, w)
