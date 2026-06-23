@@ -4,4 +4,5 @@ VoxelShapes = "e571a3b5-8c16-454b-ac54-7ac4b35e7290"
 
 [compat]
 Documenter = "1"
+VoxelShapes = "0.1.1"
 julia = "1.10"
