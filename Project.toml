@@ -11,7 +11,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 Aqua = "0.8"
-CUDA = "5.8.2"
+CUDA = "5.8.2, 6.2"
 KernelAbstractions = "0.9.35"
 LinearAlgebra = "1.0"
 StaticArrays = "1.9.13"
