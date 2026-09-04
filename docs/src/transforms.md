@@ -38,8 +38,9 @@ tilted = Rotated(box, (0.0, 0.0, π/4))
 # 30° around an arbitrary axis
 tilted2 = Rotated(box, (1.0, 1.0, 0.0), π/6)
 
-world = World((64, 64, 64), (1/64, 1/64, 1/64), [tilted], 0.0, SubpixelAntiAliasing())
-arr   = Array(world)
+geometry  = Geometry([tilted], 0.0, SubpixelAntiAliasing())
+region = Region((64, 64, 64), (1 // 64, 1 // 64, 1 // 64), (1 // 2, 1 // 2, 1 // 2))
+arr    = rasterize(geometry, region)
 ```
 
 See the [API reference](@ref "API reference") for full signatures.

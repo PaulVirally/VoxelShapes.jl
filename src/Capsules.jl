@@ -78,4 +78,15 @@ end
 
 Types.has_exact_sdf(::FillableCapsule) = true
 
+"""
+    bounding_box(shape::FillableCapsule) -> (lower, upper)
+
+Exact axis-aligned bounding box: `min.(a,b) - radius` to `max.(a,b) + radius`.
+"""
+function Types.bounding_box(c::FillableCapsule{T}) where {T}
+    lo = min.(c.a, c.b) .- c.radius
+    hi = max.(c.a, c.b) .+ c.radius
+    return (Tuple(lo), Tuple(hi))
+end
+
 end # module

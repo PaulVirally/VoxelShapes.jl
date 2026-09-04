@@ -38,14 +38,15 @@ hollow_cropped = csg_diff(csg_diff(sphere, cube), inner)
 using VoxelShapes
 
 N  = 80
-dx = 1.0 / N
+dx = 1 // N
 
 outer = FillableSphere((0.5, 0.5, 0.5), 0.3, 1.0)
 inner = FillableSphere((0.5, 0.5, 0.5), 0.22, 0.0)
 shell = csg_diff(outer, inner)
 
-world = World((N, N, N), (dx, dx, dx), [shell], 0.0, SubpixelAntiAliasing())
-arr   = Array(world)
+geometry  = Geometry([shell], 0.0, SubpixelAntiAliasing())
+region = Region((N, N, N), (dx, dx, dx), (1 // 2, 1 // 2, 1 // 2))
+arr    = rasterize(geometry, region)
 ```
 
 See the [API reference](@ref "API reference") for full signatures.

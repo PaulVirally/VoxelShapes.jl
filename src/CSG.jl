@@ -116,4 +116,26 @@ Types.has_exact_sdf(s::IntersectionShape) = has_exact_sdf(s.a) && has_exact_sdf(
 Types.has_exact_sdf(s::DifferenceShape) = has_exact_sdf(s.a) && has_exact_sdf(s.b)
 Types.has_exact_sdf(s::ComplementShape) = has_exact_sdf(s.a)
 
+# bounding_box: combine the operands' boxes per the usual CSG set algebra.
+function Types.bounding_box(s::UnionShape)
+    loA, hiA = bounding_box(s.a)
+    loB, hiB = bounding_box(s.b)
+    return (min.(loA, loB), max.(hiA, hiB))
+end
+
+function Types.bounding_box(s::IntersectionShape)
+    loA, hiA = bounding_box(s.a)
+    loB, hiB = bounding_box(s.b)
+    return (max.(loA, loB), min.(hiA, hiB))
+end
+
+Types.bounding_box(s::DifferenceShape) = bounding_box(s.a)
+
+function Types.bounding_box(s::ComplementShape)
+    lo, _ = bounding_box(s.a)
+    T = eltype(lo)
+    inf = T(Inf)
+    return ((-inf, -inf, -inf), (inf, inf, inf))
+end
+
 end # module

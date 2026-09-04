@@ -24,6 +24,14 @@ VoxelShapes.has_exact_sdf(::MyShape) = true
 
 This tells [`AdaptiveAntiAliasing`](@ref) it can safely skip the inner stencil for voxels far from the surface.
 
+Optionally, add a bounding box:
+
+```julia
+VoxelShapes.bounding_box(shape::MyShape) -> (lower::NTuple{3,T}, upper::NTuple{3,T})
+```
+
+The default returns the all-infinite box `((-Inf,-Inf,-Inf), (Inf,Inf,Inf))`, so [`refine`](@ref) around a shape without this method just refines the whole grid. A tighter, conservative box (never smaller than the shape, larger is fine) lets `refine` carve out only the region around the shape instead. See [Grids and refinement](@ref) for how the box is used.
+
 ## Minimal example
 
 ```julia
@@ -56,6 +64,6 @@ VoxelShapes.has_exact_sdf(::MyBox) = true
 
 ## GPU compatibility
 
-For the shape to work with `CuArray(world)`, the struct must be `isbits`. Avoid fields that are heap-allocated (arrays, strings, arbitrary closures). Use `StaticArrays.SVector` for fixed-size vector fields and `NTuple` for fixed-size tuples.
+For the shape to work with `rasterize(geometry, region, CuArray)`, the struct must be `isbits`. Avoid fields that are heap-allocated (arrays, strings, arbitrary closures). Use `StaticArrays.SVector` for fixed-size vector fields and `NTuple` for fixed-size tuples.
 
 See the [API reference](@ref "API reference") for the abstract type documentation.

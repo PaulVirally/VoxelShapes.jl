@@ -8,9 +8,9 @@
 [![Version](https://juliahub.com/docs/General/VoxelShapes/stable/version.svg)](https://juliahub.com/ui/Packages/General/VoxelShapes)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
-![A scene built from every available shape primitive](examples/07_showcase.png)
+![A geometry built from every available shape primitive](examples/07_showcase.png)
 
-Place geometric shapes into a 3D voxel grid. Each shape carries a fill value (or a gradient function), and you can pick how boundary voxels are blended when a surface doesn't line up with the grid. Call `Array(world)` and you get a plain Julia array.
+Place geometric shapes into a 3D voxel grid. Each shape carries a fill value (or a gradient function), and you can pick how boundary voxels are blended when a surface doesn't line up with the grid. Call `rasterize(geometry, region)` and you get a plain Julia array.
 
 The main use case is any grid-based simulation that needs per-voxel scalar or vector properties defined by geometry. The library has no opinions about what the values mean.
 
@@ -29,18 +29,13 @@ using VoxelShapes
 N = 64
 sphere = FillableSphere((0.5, 0.5, 0.5), 0.3, 1.0)
 
-world = World(
-    (N, N, N),        # grid dimensions in voxels
-    (1/N, 1/N, 1/N),  # physical size of one voxel
-    [sphere],
-    0.0,              # background value
-    NoAntiAliasing()
-)
+geometry  = Geometry([sphere], 0.0, NoAntiAliasing())    # what to draw
+region = Region((N, N, N), (1//N, 1//N, 1//N), (1//2, 1//2, 1//2))  # where to sample
 
-arr = Array(world)    # returns a 64×64×64 Float64 array
+arr = rasterize(geometry, region)    # returns a 64×64×64 Float64 array
 ```
 
-`World` is immutable. To add more shapes, use `add_shape(world, shape)`, which returns a new `World` with the shape appended.
+A `Geometry` holds the shapes, the background value, and the anti-aliasing strategy; it says nothing about resolution, so the same geometry can be rasterized at any scale. A `Region` holds the cell count, voxel size, and center of a single block of uniform voxels, in exact rational arithmetic. Both are immutable. To add more shapes, use `add_shape(geometry, shape)`, which returns a new `Geometry` with the shape appended.
 
 ![Center z-slice of a sphere rasterized at 64³](examples/01_hello_sphere.png)
 
@@ -64,7 +59,7 @@ FillableHalfSpace(point, normal, fill_val)
 
 `FillableCone` with `top_radius = 0` is a true cone; unequal nonzero radii give a frustum.
 
-Shapes are evaluated in the order they were added to the world. The first shape whose containment test passes claims the voxel, with one exception: the background value doubles as a transparency sentinel. A shape that covers a voxel but produces a value equal to the background is treated as transparent there, so the next shape (or the background) shows through. This lets you punch holes by filling with the background value, but it also means you cannot deliberately paint the background value on top of a lower layer.
+Shapes are evaluated in the order they were added to the geometry. The first shape whose containment test passes claims the voxel, with one exception: the background value doubles as a transparency sentinel. A shape that covers a voxel but produces a value equal to the background is treated as transparent there, so the next shape (or the background) shows through. This lets you punch holes by filling with the background value, but it also means you cannot deliberately paint the background value on top of a lower layer.
 
 ## Fill functions
 
@@ -143,10 +138,30 @@ The last two implement interpolation schemes from computational electrodynamics.
 
 ```julia
 using CUDA
-arr = CuArray(world)   # runs the rasterization kernel on the GPU
+arr = rasterize(geometry, region, CuArray)   # runs the rasterization kernel on the GPU
 ```
 
-The world, all shapes, and all fill functions must be `isbits`-compatible. Everything built into VoxelShapes is. Custom fill functions must also be `isbits`: no closures that capture heap-allocated objects.
+The geometry, all shapes, and all fill functions must be `isbits`-compatible. Everything built into VoxelShapes is. Custom fill functions must also be `isbits`: no closures that capture heap-allocated objects.
+
+## Grids and refinement
+
+A `Region` is one block of uniform voxels. Real problems often want higher resolution near a surface and coarser voxels away from it, without paying for a uniform fine grid everywhere. A `CompositeGrid` glues several `Region`s of different resolution into one grid that still rasterizes as a single object.
+
+```julia
+grid = refine(Region((8, 8, 8), (1//16, 1//16, 1//16)),
+              ((0//1, 0//1, 0//1), (1//8, 1//8, 1//8)))
+```
+
+This carves the region into a refined core plus the six leftover slabs that fill out the rest of it, seven regions in total, matching the reference case from GilaElectromagnetics.jl's own composite-volume tests. `refine(grid, shape; factor=2, padding=0)` does the same starting from a shape's `bounding_box` instead of a box you specify by hand, so refining around a sphere is one call:
+
+```julia
+sphere = FillableSphere((0.0, 0.0, 0.0), 0.05, 1.0)
+grid   = refine(Region((8, 8, 8), (1//16, 1//16, 1//16)), sphere; factor=2, padding=1//16)
+```
+
+`rasterize(geometry, grid)` returns a `CompositeField`: one flat vector, one entry per voxel, region by region in the order `refine` produced them. `vec(field)` is that flat vector, and `collect(eachregion(field))` gives one 3D array per region; both line up with `regionview` and `eachregion`. `regrid(field)` resamples the whole thing onto one uniform array at the finest scale present, which is what you want for a quick `heatmap!`, at the cost of the memory a uniform grid at that resolution needs. See `examples/08_refine.jl` and the [Grids and refinement](https://paulvirally.github.io/VoxelShapes.jl/stable/grids/) docs page for the full picture, including a slice colored by region index.
+
+This whole grid representation, and `refine` itself, mirrors [GilaElectromagnetics.jl](https://github.com/PaulVirally/GilaElectromagnetics.jl)'s own composite volumes, so a `CompositeField` rasterized here lines up with Gila's degrees of freedom without any reshaping.
 
 ## Extending
 
@@ -160,3 +175,5 @@ VoxelShapes.sdf(shape::MyShape, point::NTuple{3,T})                    # signed 
 ```
 
 `has_exact_sdf` defaults to `false`. Set it to `true` if your SDF is a true Euclidean distance, which lets `AdaptiveAntiAliasing` skip boundary checks for interior and exterior voxels.
+
+Optionally, define `VoxelShapes.bounding_box(shape::MyShape)` to return a conservative axis-aligned `(lower, upper)` box (infinite extents as `±Inf`). The default is all-infinite, so `refine(grid, shape)` on a shape without this method refines the whole grid instead of just the neighborhood of the shape.

@@ -96,4 +96,18 @@ end
 
 Types.has_exact_sdf(::FillableCylinder) = true
 
+"""
+    bounding_box(shape::FillableCylinder) -> (lower, upper)
+
+Exact axis-aligned bounding box: `± half_height` along `axis`, `± radius` on
+the other two axes.
+"""
+function Types.bounding_box(c::FillableCylinder{T}) where {T}
+    ax = c.axis
+    ctr = c.center_xyz
+    lower = ntuple(i -> ctr[i] - (i == ax ? c.half_height : c.radius), 3)
+    upper = ntuple(i -> ctr[i] + (i == ax ? c.half_height : c.radius), 3)
+    return (lower, upper)
+end
+
 end # module

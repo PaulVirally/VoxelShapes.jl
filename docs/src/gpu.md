@@ -4,18 +4,18 @@ Rasterization runs on GPU with a single call:
 
 ```julia
 using CUDA
-arr = CuArray(world)   # returns a CuArray{T, 3}
+arr = rasterize(geometry, region, CuArray)   # returns a CuArray{T, 3}
 ```
 
-The kernel (`fill_voxel!`) is written with [KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl) and dispatches to `CUDABackend()` automatically. `Array(world)` runs the same kernel on CPU.
+The kernel (`fill_voxel!`) is written with [KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl) and dispatches to `CUDABackend()` automatically. `rasterize(geometry, region)` runs the same kernel on CPU. `rasterize(geometry, grid, CuArray)` does the same over a `CompositeGrid`, region by region, and hands back a `CompositeField` whose `data` lives on the GPU.
 
 ## The `isbits` constraint
 
-For a `World` to be GPU-compatible, every field must be `isbits`. This means:
+Only the `Geometry` reaches the kernel, so it is the `Geometry` that has to be `isbits`, not the `Region` or `CompositeGrid` (those hold exact rationals and stay on the host; only the converted origin and voxel size of each region cross over). This means:
 
 - The shapes tuple and all shape fields must be stack-allocated (no heap references).
 - Fill functions must be `isbits`. The built-in `ConstantFill`, `RadialGradient`, and `AxialGradient` all are. Closures that capture mutable objects are not.
-- The background value and voxel size must be `isbits` (plain numbers are fine).
+- The background value must be `isbits` (plain numbers are fine).
 
 The convenience constructors create closures (`_ -> fill_val`) that are `isbits` only for `isbits` `fill_val`. Gradient fills require the inner struct constructor (see [Fill functions](fills.md)).
 
@@ -34,9 +34,10 @@ N = 256
 dx = 1.0f0 / N   # Float32 for better GPU throughput
 
 sphere = FillableSphere((0.5f0, 0.5f0, 0.5f0), 0.3f0, 1.0f0)
-world  = World((N, N, N), (dx, dx, dx), [sphere], 0.0f0, SubpixelAntiAliasing())
+geometry  = Geometry([sphere], 0.0f0, SubpixelAntiAliasing())
+region = Region((N, N, N), (1 // N, 1 // N, 1 // N), (1 // 2, 1 // 2, 1 // 2))
 
-arr = CuArray(world)   # runs on GPU
+arr = rasterize(geometry, region, CuArray; precision=Float32)   # runs on GPU
 ```
 
 Use `Float32` where you can. It packs twice as densely as `Float64` in GPU SIMD and is usually accurate enough for voxel geometry.

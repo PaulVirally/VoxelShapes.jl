@@ -88,4 +88,19 @@ end
 
 # No exact closed-form SDF for a frustum.
 
+"""
+    bounding_box(shape::FillableCone) -> (lower, upper)
+
+Exact axis-aligned bounding box: `± half_height` along `axis`,
+`± max(base_radius, top_radius)` on the other two axes.
+"""
+function Types.bounding_box(c::FillableCone{T}) where {T}
+    ax = c.axis
+    ctr = c.center_xyz
+    r = max(c.base_radius, c.top_radius)
+    lower = ntuple(i -> ctr[i] - (i == ax ? c.half_height : r), 3)
+    upper = ntuple(i -> ctr[i] + (i == ax ? c.half_height : r), 3)
+    return (lower, upper)
+end
+
 end # module

@@ -93,4 +93,32 @@ Types.sdf(w::Rotated{S,T}, point::NTuple{3,T}) where {S,T} =
 
 Types.has_exact_sdf(w::Rotated) = has_exact_sdf(w.inner)
 
+"""
+    bounding_box(shape::Rotated) -> (lower, upper)
+
+If the inner shape's bounding box is infinite along any axis, returns an
+all-infinite box (a rotated infinite region cannot be tightened by an
+axis-aligned box). Otherwise maps the 8 corners of the inner box from local to
+world space (`world = R' * (c - pivot) + pivot`) and takes the componentwise
+min/max.
+"""
+function Types.bounding_box(w::Rotated{S,T}) where {S,T}
+    lo, hi = bounding_box(w.inner)
+    if any(isinf, lo) || any(isinf, hi)
+        inf = T(Inf)
+        return ((-inf, -inf, -inf), (inf, inf, inf))
+    end
+    lo3 = SVector{3,T}(lo[1], lo[2], lo[3])
+    hi3 = SVector{3,T}(hi[1], hi[2], hi[3])
+    corners = ntuple(8) do k
+        x = (k - 1) & 1 == 0 ? lo3[1] : hi3[1]
+        y = (k - 1) & 2 == 0 ? lo3[2] : hi3[2]
+        z = (k - 1) & 4 == 0 ? lo3[3] : hi3[3]
+        w.R' * (SVector{3,T}(x, y, z) - w.pivot) + w.pivot
+    end
+    lower = ntuple(i -> minimum(c[i] for c in corners), 3)
+    upper = ntuple(i -> maximum(c[i] for c in corners), 3)
+    return (lower, upper)
+end
+
 end # module

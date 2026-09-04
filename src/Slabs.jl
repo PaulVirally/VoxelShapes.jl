@@ -63,6 +63,26 @@ Types.sdf(h::FillableHalfSpace{T}, point::NTuple{3,T}) where {T} =
 Types.has_exact_sdf(::FillableHalfSpace) = true
 
 """
+    bounding_box(shape::FillableHalfSpace) -> (lower, upper)
+
+On an axis where the normal is (anti-)aligned with it (`abs(normal[i]) ≈ 1`),
+the half-space is bounded on the side the normal points away from: a `+1`
+normal bounds above at `point[i]`, a `-1` normal bounds below at `point[i]`.
+Every other axis is unbounded (`-Inf, Inf`).
+"""
+function Types.bounding_box(h::FillableHalfSpace{T}) where {T}
+    lower = ntuple(3) do i
+        n = h.normal[i]
+        isapprox(n, one(T)) ? T(-Inf) : (isapprox(n, -one(T)) ? h.point[i] : T(-Inf))
+    end
+    upper = ntuple(3) do i
+        n = h.normal[i]
+        isapprox(n, one(T)) ? h.point[i] : (isapprox(n, -one(T)) ? T(Inf) : T(Inf))
+    end
+    return (lower, upper)
+end
+
+"""
     FillableSlab{T, F, I} <: AbstractFillableShape
 
 Infinite planar slab: points within `half_thickness` of a reference plane.
@@ -118,5 +138,18 @@ Types.sdf(s::FillableSlab{T}, point::NTuple{3,T}) where {T} =
     abs(dot(SVector{3,T}(point) - s.point, s.normal)) - s.half_thickness
 
 Types.has_exact_sdf(::FillableSlab) = true
+
+"""
+    bounding_box(shape::FillableSlab) -> (lower, upper)
+
+On an axis where the normal is (anti-)aligned with it (`abs(normal[i]) ≈ 1`),
+the slab is bounded by `point[i] ± half_thickness`. Every other axis is
+unbounded (`-Inf, Inf`), since the slab extends infinitely within its plane.
+"""
+function Types.bounding_box(s::FillableSlab{T}) where {T}
+    lower = ntuple(i -> isapprox(abs(s.normal[i]), one(T)) ? s.point[i] - s.half_thickness : T(-Inf), 3)
+    upper = ntuple(i -> isapprox(abs(s.normal[i]), one(T)) ? s.point[i] + s.half_thickness : T(Inf), 3)
+    return (lower, upper)
+end
 
 end # module

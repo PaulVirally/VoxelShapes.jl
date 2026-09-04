@@ -99,4 +99,19 @@ end
 
 Types.has_exact_sdf(::FillableTorus) = true
 
+"""
+    bounding_box(shape::FillableTorus) -> (lower, upper)
+
+Exact axis-aligned bounding box: `± minor_radius` along `axis`,
+`± (major_radius + minor_radius)` on the other two axes.
+"""
+function Types.bounding_box(t::FillableTorus{T}) where {T}
+    ax = t.axis
+    ctr = t.center_xyz
+    r_out = t.major_radius + t.minor_radius
+    lower = ntuple(i -> ctr[i] - (i == ax ? t.minor_radius : r_out), 3)
+    upper = ntuple(i -> ctr[i] + (i == ax ? t.minor_radius : r_out), 3)
+    return (lower, upper)
+end
+
 end # module

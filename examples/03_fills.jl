@@ -14,7 +14,7 @@ using StaticArrays: SVector
 using GLMakie
 
 N = 64
-dx = 1.0 / N
+region = Region((N, N, N), (1 // N, 1 // N, 1 // N), (1 // 2, 1 // 2, 1 // 2))
 c  = SVector{3,Float64}(0.5, 0.5, 0.5)
 r  = SVector{3,Float64}(0.3, 0.3, 0.3)
 
@@ -42,18 +42,18 @@ cylinder_axial = FillableCylinder{Float64,typeof(f_cyl),typeof(interp)}(
 )
 
 aa = SuperResolutionAntiAliasing(4)
-world_for(shape) = World((N, N, N), (dx, dx, dx), [shape], 0.0, aa)
+geometry_for(shape) = Geometry([shape], 0.0, aa)
 
 panels = [
-    ("Constant (1.0)",       world_for(sphere_const),    arr -> arr[:, :, N ÷ 2]),
-    ("Radial gradient",      world_for(sphere_radial),   arr -> arr[:, :, N ÷ 2]),
-    ("Axial gradient (sphere)", world_for(sphere_axial), arr -> arr[:, :, N ÷ 2]),
-    ("Axial gradient (cylinder)", world_for(cylinder_axial), arr -> arr[:, :, N ÷ 2]),
+    ("Constant (1.0)",       geometry_for(sphere_const),    arr -> arr[:, :, N ÷ 2]),
+    ("Radial gradient",      geometry_for(sphere_radial),   arr -> arr[:, :, N ÷ 2]),
+    ("Axial gradient (sphere)", geometry_for(sphere_axial), arr -> arr[:, :, N ÷ 2]),
+    ("Axial gradient (cylinder)", geometry_for(cylinder_axial), arr -> arr[:, :, N ÷ 2]),
 ]
 
 fig = Figure(size = (900, 280))
-for (i, (title, world, slice_fn)) in enumerate(panels)
-    arr = Array(world)
+for (i, (title, geometry, slice_fn)) in enumerate(panels)
+    arr = rasterize(geometry, region)
     ax  = Axis(fig[1, i], title = title, aspect = DataAspect())
     heatmap!(ax, slice_fn(arr), colormap = :inferno, colorrange = (0, 1))
     hidedecorations!(ax)

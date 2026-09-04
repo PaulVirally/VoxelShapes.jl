@@ -41,6 +41,6 @@ AdaptiveAntiAliasing(SubpixelAntiAliasing())
 | `SuperResolutionAntiAliasing(n)` | O(n³) everywhere | Accurate | Only use when every voxel is near a boundary |
 | `GaussianAntiAliasing` | O(kernel³) | Soft | For intentionally blurred edges |
 
-The AA strategy is set on the `World`, not the shape, so it applies to all shapes in the scene.
+The AA strategy is set on the `Geometry`, not the shape, so it applies to all shapes in the geometry.
 
 See the [API reference](@ref "API reference") for full signatures.

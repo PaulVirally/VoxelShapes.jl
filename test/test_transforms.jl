@@ -59,4 +59,52 @@
         # identity rotation about any pivot is still the identity
         @test (2.5, 0.0, 0.0) in r
     end
+
+    @testset "bounding_box" begin
+        @testset "identity rotation matches the inner box" begin
+            I3 = SMatrix{3,3,Float64,9}(1,0,0, 0,1,0, 0,0,1)
+            r = Rotated(box, I3)
+            @test bounding_box(r) == bounding_box(box)
+        end
+
+        @testset "45 degrees about z widens x/y by sqrt(2)" begin
+            # box has full side lengths (6,2,2) -> half-lengths (3,1,1) centered at the origin.
+            r = Rotated(box, (0.0, 0.0, π/4))
+            lo, hi = bounding_box(r)
+            expected_xy = (3.0 + 1.0) / sqrt(2)   # widened half-extent along x and y
+            @test lo[1] ≈ -expected_xy
+            @test hi[1] ≈ expected_xy
+            @test lo[2] ≈ -expected_xy
+            @test hi[2] ≈ expected_xy
+            @test lo[3] ≈ -1.0    # z untouched by a rotation about z
+            @test hi[3] ≈ 1.0
+        end
+
+        @testset "conservativeness under random rotations" begin
+            for _ in 1:200
+                angles = (2π*rand(), 2π*rand(), 2π*rand())
+                r = Rotated(box, angles)
+                lo, hi = bounding_box(r)
+                for _ in 1:20
+                    p = ntuple(i -> 10.0 * (2*rand() - 1), 3)
+                    if p in r
+                        @test all(lo[i] <= p[i] <= hi[i] for i in 1:3)
+                    end
+                end
+            end
+        end
+
+        @testset "infinite inner box stays all-infinite" begin
+            # FillableHalfSpace has no center(), so build the rotation matrix
+            # and pivot explicitly rather than going through the angle-based
+            # constructors (which look up center(inner)).
+            h = FillableHalfSpace((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 1.0)
+            c, s = cos(π/4), sin(π/4)
+            Rz = SMatrix{3,3,Float64,9}(c, s, 0, -s, c, 0, 0, 0, 1)
+            r = Rotated(h, Rz, (0.0, 0.0, 0.0))
+            lo, hi = bounding_box(r)
+            @test all(isinf, lo)
+            @test all(isinf, hi)
+        end
+    end
 end

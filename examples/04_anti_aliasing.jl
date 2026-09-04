@@ -19,7 +19,7 @@ using VoxelShapes
 using GLMakie
 
 N = 64
-dx = 1.0 / N
+region = Region((N, N, N), (1 // N, 1 // N, 1 // N), (1 // 2, 1 // 2, 1 // 2))
 sphere = FillableSphere((0.5, 0.5, 0.5), 0.3, 1.0)
 
 strategies = [
@@ -32,8 +32,8 @@ strategies = [
 
 fig = Figure(size = (1100, 520))
 for (i, (label, aa)) in enumerate(strategies)
-    world = World((N, N, N), (dx, dx, dx), [sphere], 0.0, aa)
-    arr   = Array(world)
+    geometry = Geometry([sphere], 0.0, aa)
+    arr   = rasterize(geometry, region)
     slice = arr[:, :, N ÷ 2]
 
     # Full slice

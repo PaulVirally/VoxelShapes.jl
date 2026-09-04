@@ -1,12 +1,12 @@
 module Types
 
 export AbstractFillableShape, AbstractAntiAliasing, AbstractInterpolation
-export interpolation, sdf, has_exact_sdf, center
+export interpolation, sdf, has_exact_sdf, center, bounding_box
 
 """
     AbstractFillableShape
 
-Base type for all shapes that can be rasterized into a [`World`](@ref VoxelShapes.World).
+Base type for all shapes that can be placed in a [`Geometry`](@ref VoxelShapes.Geometry) and rasterized.
 
 Subtypes must implement:
 - `Base.in(point, shape)` (containment test)
@@ -70,5 +70,21 @@ The default is `false`. Shapes with exact SDFs allow `AdaptiveAntiAliasing`
 to skip the inner stencil for voxels clearly inside or outside the surface.
 """
 has_exact_sdf(::AbstractFillableShape) = false
+
+"""
+    bounding_box(shape) -> (lower::NTuple{3,T}, upper::NTuple{3,T})
+
+Return an axis-aligned bounding box for `shape` as a `(lower, upper)` pair of
+`NTuple{3,T}` corners.
+
+The box is conservative: it may be larger than `shape`, but never smaller
+(every point in `shape` lies within it). Infinite extents are reported as
+`±Inf`.
+
+The default method, used for shapes that do not override it, returns the
+all-infinite box `((-Inf,-Inf,-Inf), (Inf,Inf,Inf))`. Refining a grid around
+such a shape then refines everything rather than failing.
+"""
+bounding_box(::AbstractFillableShape) = ((-Inf, -Inf, -Inf), (Inf, Inf, Inf))
 
 end

@@ -4,6 +4,9 @@
 
 const VS = 1.0  # nominal voxel size used where fill needs a voxel_size argument
 
+# A minimal shape with no bounding_box method, to exercise the Types default.
+struct _DummyShape <: AbstractFillableShape end
+
 @testset "Shapes" begin
 
     @testset "FillableSphere / FillableEllipsoid" begin
@@ -182,5 +185,120 @@ const VS = 1.0  # nominal voxel size used where fill needs a voxel_size argument
         @test has_exact_sdf(cap) == true
         @test sdf(cap, (1.0, 0.0, 1.0)) ≈ 0.5    # distance 1 to axis, minus radius
         @test sdf(cap, (0.0, 0.0, 1.0)) ≈ -0.5
+    end
+
+    @testset "bounding_box" begin
+        # Helper: draw random points in a cube and check that every point
+        # inside the shape also lies inside the reported bounding box.
+        function check_conservative(shape, sample_center, sample_halfwidth; n=2000)
+            lo, hi = bounding_box(shape)
+            for _ in 1:n
+                p = ntuple(i -> sample_center[i] + sample_halfwidth[i] * (2*rand() - 1), 3)
+                if p in shape
+                    @test all(lo[i] <= p[i] for i in 1:3)
+                    @test all(p[i] <= hi[i] for i in 1:3)
+                end
+            end
+        end
+
+        @testset "default method (unknown shape)" begin
+            lo, hi = bounding_box(_DummyShape())
+            @test lo == (-Inf, -Inf, -Inf)
+            @test hi == (Inf, Inf, Inf)
+        end
+
+        @testset "Ellipsoid/Sphere" begin
+            e = FillableEllipsoid((1.0, -2.0, 3.0), (2.0, 1.0, 0.5), 1.0)
+            lo, hi = bounding_box(e)
+            @test lo == (-1.0, -3.0, 2.5)
+            @test hi == (3.0, -1.0, 3.5)
+            check_conservative(e, (1.0, -2.0, 3.0), (3.0, 2.0, 1.5))
+
+            s = FillableSphere((0.0, 0.0, 0.0), 2.0, 1.0)
+            check_conservative(s, (0.0, 0.0, 0.0), (3.0, 3.0, 3.0))
+        end
+
+        @testset "Cuboid" begin
+            c = FillableCuboid((1.0, 2.0, 3.0), (4.0, 2.0, 1.0), 1.0)
+            lo, hi = bounding_box(c)
+            @test lo == (-1.0, 1.0, 2.5)
+            @test hi == (3.0, 3.0, 3.5)
+            check_conservative(c, (1.0, 2.0, 3.0), (3.0, 2.5, 1.5))
+        end
+
+        @testset "Cylinder" begin
+            cyl = FillableCylinder((0.0, 0.0, 0.0), 1.0, 2.0, 1.0; axis=3)
+            lo, hi = bounding_box(cyl)
+            @test lo == (-1.0, -1.0, -2.0)
+            @test hi == (1.0, 1.0, 2.0)
+            check_conservative(cyl, (0.0, 0.0, 0.0), (1.5, 1.5, 2.5))
+
+            cylx = FillableCylinder((1.0, 0.0, 0.0), 0.5, 3.0, 1.0; axis=1)
+            lo, hi = bounding_box(cylx)
+            @test lo == (-2.0, -0.5, -0.5)
+            @test hi == (4.0, 0.5, 0.5)
+            check_conservative(cylx, (1.0, 0.0, 0.0), (3.5, 1.0, 1.0))
+        end
+
+        @testset "Cone" begin
+            cone = FillableCone((0.0, 0.0, 0.0), 1.0, 0.5, 2.0, 1.0; axis=3)
+            lo, hi = bounding_box(cone)
+            @test lo == (-1.0, -1.0, -2.0)
+            @test hi == (1.0, 1.0, 2.0)
+            check_conservative(cone, (0.0, 0.0, 0.0), (1.5, 1.5, 2.5))
+        end
+
+        @testset "Torus" begin
+            t = FillableTorus((0.0, 0.0, 0.0), 2.0, 0.5, 1.0; axis=3)
+            lo, hi = bounding_box(t)
+            @test lo == (-2.5, -2.5, -0.5)
+            @test hi == (2.5, 2.5, 0.5)
+            check_conservative(t, (0.0, 0.0, 0.0), (3.0, 3.0, 1.0))
+        end
+
+        @testset "Capsule" begin
+            cap = FillableCapsule((0.0, 1.0, 0.0), (2.0, -1.0, 3.0), 0.5, 1.0)
+            lo, hi = bounding_box(cap)
+            @test lo == (-0.5, -1.5, -0.5)
+            @test hi == (2.5, 1.5, 3.5)
+            check_conservative(cap, (1.0, 0.0, 1.5), (2.0, 2.0, 3.0))
+        end
+
+        @testset "Slab (axis-aligned)" begin
+            s = FillableSlab((0.0, 0.0, 1.0), (0.0, 0.0, 1.0), 0.5, 1.0)
+            lo, hi = bounding_box(s)
+            @test lo == (-Inf, -Inf, 0.5)
+            @test hi == (Inf, Inf, 1.5)
+            check_conservative(s, (0.0, 0.0, 1.0), (5.0, 5.0, 1.0))
+        end
+
+        @testset "Slab (not axis-aligned)" begin
+            s = FillableSlab((0.0, 0.0, 0.0), (1.0, 1.0, 0.0), 0.5, 1.0)
+            lo, hi = bounding_box(s)
+            @test all(isinf, lo)
+            @test all(isinf, hi)
+        end
+
+        @testset "HalfSpace" begin
+            # normal = +z: inside is z <= point z (upper-bounded above, unbounded below)
+            h = FillableHalfSpace((0.0, 0.0, 2.0), (0.0, 0.0, 1.0), 1.0)
+            lo, hi = bounding_box(h)
+            @test lo == (-Inf, -Inf, -Inf)
+            @test hi == (Inf, Inf, 2.0)
+            check_conservative(h, (0.0, 0.0, -3.0), (5.0, 5.0, 5.0))
+
+            # normal = -z: inside is z >= point z (lower-bounded, unbounded above)
+            h2 = FillableHalfSpace((0.0, 0.0, 2.0), (0.0, 0.0, -1.0), 1.0)
+            lo2, hi2 = bounding_box(h2)
+            @test lo2 == (-Inf, -Inf, 2.0)
+            @test hi2 == (Inf, Inf, Inf)
+            check_conservative(h2, (0.0, 0.0, 7.0), (5.0, 5.0, 5.0))
+
+            # normal not axis-aligned: unbounded on every axis
+            h3 = FillableHalfSpace((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), 1.0)
+            lo3, hi3 = bounding_box(h3)
+            @test all(isinf, lo3)
+            @test all(isinf, hi3)
+        end
     end
 end

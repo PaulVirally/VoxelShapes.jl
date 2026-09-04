@@ -80,4 +80,14 @@ end
 
 # k0*(k0-1)/k1 overestimates distance outside the shell, so has_exact_sdf is false.
 
+"""
+    bounding_box(shape::FillableEllipsoid) -> (lower, upper)
+
+Tight axis-aligned bounding box: `center ± radii`.
+"""
+function Types.bounding_box(e::FillableEllipsoid{T}) where {T}
+    c, r = e.center_xyz, e.radii_xyz
+    return (Tuple(c .- r), Tuple(c .+ r))
+end
+
 end

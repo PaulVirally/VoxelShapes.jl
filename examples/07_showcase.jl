@@ -1,6 +1,6 @@
 # 07_showcase.jl
 #
-# An "atom on a stand" scene that exercises the full library surface:
+# An "atom on a stand" geometry that exercises the full library surface:
 #
 #   Shapes:     FillableSphere, FillableEllipsoid, FillableCylinder,
 #               FillableCuboid, FillableCone, FillableTorus, FillableSlab,
@@ -11,7 +11,7 @@
 #   Transforms: Rotated for the polar orbital ring
 #   AA:         AdaptiveAntiAliasing wrapping SuperResolutionAntiAliasing
 #
-# Scene layout (z = 0 bottom, z = 1 top):
+# Geometry layout (z = 0 bottom, z = 1 top):
 #   z ≈ 0.00 to 0.10   ground slab
 #   z ≈ 0.10 to 0.24   base cuboid
 #   z ≈ 0.24 to 0.50   pedestal cylinder  (axial gradient: dim at base, bright at top)
@@ -26,7 +26,7 @@ using StaticArrays: SVector
 using GLMakie
 
 N  = 128
-dx = 1.0 / N
+region = Region((N, N, N), (1 // N, 1 // N, 1 // N), (1 // 2, 1 // 2, 1 // 2))
 
 interp = LinearInterpolation()
 
@@ -85,7 +85,7 @@ hollow_electron = csg_diff(e_outer, e_inner)
 # Top cone antenna
 top_cone = FillableCone((0.5, 0.5, 0.85), 0.020, 0.0, 0.07, 0.95)
 
-# ── Assemble world ────────────────────────────────────────────────────────────
+# ── Assemble geometry ────────────────────────────────────────────────────────────
 
 all_shapes = [
     ground, base_box, pedestal, antenna_cap,
@@ -97,16 +97,16 @@ all_shapes = [
 ]
 
 aa    = AdaptiveAntiAliasing(SuperResolutionAntiAliasing(4))
-world = World((N, N, N), (dx, dx, dx), all_shapes, 0.0, aa)
-arr   = Array(world)
+geometry = Geometry(all_shapes, 0.0, aa)
+arr   = rasterize(geometry, region)
 
 # ── Visualize ────────────────────────────────────────────────────────────────
 # Left:  3D isosurface rendered with GLMakie volume()
-# Right: three orthogonal slices through the scene
+# Right: three orthogonal slices through the geometry
 
-iz_nucleus = round(Int, 0.60 / dx)
-iy_center  = round(Int, 0.50 / dx)
-ix_center  = round(Int, 0.50 / dx)
+iz_nucleus = round(Int, 0.60 * N)
+iy_center  = round(Int, 0.50 * N)
+ix_center  = round(Int, 0.50 * N)
 
 slice_specs = [
     ("XY  z ≈ 0.60  (nucleus level)",     arr[:, :, iz_nucleus]'),

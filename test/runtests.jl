@@ -12,7 +12,7 @@ using LinearAlgebra: norm
 # Pass 2 (integration): tests added after reading the implementation, covering
 # interactions between components that the black-box tests did not reach
 # (anti-aliasing x interpolation, CSG x SDF combinators, rotation isometry,
-# the World rasterization pipeline, etc.).
+# the rasterization pipeline, etc.).
 
 @testset "VoxelShapes.jl" begin
     include("test_aqua.jl")
@@ -24,7 +24,9 @@ using LinearAlgebra: norm
     include("test_transforms.jl")
     include("test_csg.jl")
     include("test_antialiasing.jl")
-    include("test_world.jl")
+    include("test_grids.jl")
+    include("test_geometry.jl")
+    include("test_composite.jl")
 
     # --- Pass 2: cross-cutting integration ---
     include("test_integration.jl")
