@@ -13,13 +13,11 @@ using ..Interpolations: LinearInterpolation
 
 Axis-aligned ellipsoid centered at `center_xyz` with semi-axes `radii_xyz`.
 
-The `fill_function` receives normalized local coordinates
-`((x-cx)/rx, (y-cy)/ry, (z-cz)/rz)`, where the surface is at unit norm.
-
 # Fields
 - `center_xyz`: center in world space
 - `radii_xyz`: semi-axis lengths along x, y, z
-- `fill_function`: callable mapping local coordinates to a fill value
+- `fill_function`: maps normalized local coords `((x-cx)/rx, (y-cy)/ry,
+  (z-cz)/rz)` to a fill value, surface at unit norm
 - `interpolation`: blending strategy for anti-aliasing
 """
 struct FillableEllipsoid{T, F, I<:AbstractInterpolation} <: AbstractFillableShape
@@ -42,7 +40,8 @@ end
 """
     FillableEllipsoid(center, radii, fill_val; interpolation=LinearInterpolation())
 
-Construct a [`FillableEllipsoid`](@ref) with independent semi-axis lengths `radii`.
+Construct a [`FillableEllipsoid`](@ref) with independent semi-axis lengths
+`radii`.
 """
 function FillableEllipsoid(center::NTuple{3, T}, radii::NTuple{3, T}, fill_val; interpolation::I=LinearInterpolation()) where {T, I<:AbstractInterpolation}
     f = _ -> fill_val
@@ -78,6 +77,16 @@ function Types.sdf(e::FillableEllipsoid{T}, point::NTuple{3,T}) where {T}
     return k0 * (k0 - one(T)) / k1
 end
 
-# k0*(k0-1)/k1 overestimates distance outside the shell, so has_exact_sdf is false.
+# k0*(k0-1)/k1 overestimates distance outside the shell; has_exact_sdf is false.
+
+"""
+    bounding_box(shape::FillableEllipsoid) -> (lower, upper)
+
+Tight axis-aligned bounding box: `center ± radii`.
+"""
+function Types.bounding_box(e::FillableEllipsoid{T}) where {T}
+    c, r = e.center_xyz, e.radii_xyz
+    return (Tuple(c .- r), Tuple(c .+ r))
+end
 
 end

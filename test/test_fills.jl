@@ -13,7 +13,8 @@
     end
 
     @testset "RadialGradient" begin
-        # inner_value at r=0, outer_value at r=1 (r = norm(local), clamped to [0,1])
+        # inner_value at r=0, outer_value at r=1, r = norm(local), clamped to
+        # [0,1]
         f = RadialGradient(1.0, 0.0)
         @test f((0.0, 0.0, 0.0)) ≈ 1.0          # center
         @test f((1.0, 0.0, 0.0)) ≈ 0.0          # surface

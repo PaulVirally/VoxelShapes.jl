@@ -1,6 +1,8 @@
 # Shapes
 
-Nine primitives are built in. All accept a fill value as their last positional argument; pass a [fill function](fills.md) instead for spatial variation.
+Nine primitives are built in. All accept a fill value as their last
+positional argument. Pass a [fill function](fills.md) instead for spatial
+variation.
 
 ![Center slices of all nine built-in shape primitives](assets/02_basic_shapes.png)
 
@@ -18,18 +20,24 @@ FillableSlab(point, normal, half_thickness, fill_val; interpolation=LinearInterp
 FillableHalfSpace(point, normal, fill_val; interpolation=LinearInterpolation())
 ```
 
-`FillableSphere` is a convenience constructor for `FillableEllipsoid` with equal radii.
-`FillableCube` is a convenience constructor for `FillableCuboid` with equal side lengths.
+`FillableSphere` is a convenience constructor for `FillableEllipsoid` with
+equal radii. `FillableCube` is a convenience constructor for
+`FillableCuboid` with equal side lengths.
 
-`FillableCone` with `top_radius = 0` gives a true cone; unequal nonzero values give a frustum.
+`FillableCone` with `top_radius = 0` gives a true cone. Unequal nonzero
+values give a frustum.
 
-`FillableHalfSpace` fills everything on the inward side of a plane. `FillableSlab` is two parallel half-spaces: a finite-thickness infinite sheet.
+`FillableHalfSpace` fills everything on the inward side of a plane.
+`FillableSlab` is two parallel half-spaces: a finite-thickness, infinite
+sheet.
 
-The `axis` parameter (1 = x, 2 = y, 3 = z) sets the longitudinal axis for shapes that have one.
+The `axis` parameter (1 = x, 2 = y, 3 = z) sets the long axis for shapes
+that have one.
 
 ## Local coordinates
 
-Each shape passes a 3-tuple of local coordinates to its fill function. The coordinate system differs per shape:
+Each shape passes a 3-tuple of local coordinates to its fill function. The
+coordinate system differs per shape:
 
 | Shape | Local coords |
 |---|---|
@@ -44,7 +52,8 @@ Each shape passes a 3-tuple of local coordinates to its fill function. The coord
 
 ## Signed distance functions
 
-Most shapes have an exact SDF, which allows [`AdaptiveAntiAliasing`](@ref) to skip the inner stencil for voxels clearly inside or outside the surface.
+Most shapes have an exact SDF, which lets [`AdaptiveAntiAliasing`](@ref)
+skip the inner stencil for voxels clearly inside or outside the surface.
 
 | Shape | Exact SDF |
 |---|---|

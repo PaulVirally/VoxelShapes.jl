@@ -1,9 +1,8 @@
 # 02_basic_shapes.jl
 #
-# A tour of every built-in shape. Each is rasterized into its own world
-# so they can be shown side-by-side. The z = 0.5 slice is a reasonable
-# cross-section for all of them except the capsule, which is viewed end-on
-# along z, so we take a y-slice instead.
+# A tour of every built-in shape. Each one is rasterized on its own so they
+# can sit side-by-side. The z = 0.5 slice works for all of them except the
+# capsule, which points along z, so that one gets a y-slice instead.
 #
 # Shapes covered: Sphere, Ellipsoid, Cuboid, Cylinder, Torus, Capsule,
 # Cone (frustum), HalfSpace, Slab.
@@ -12,12 +11,10 @@ using VoxelShapes
 using GLMakie
 
 N = 64
-dx = 1.0 / N
 aa = NoAntiAliasing()
+region = Region((N, N, N), (1 // N, 1 // N, 1 // N), (1 // 2, 1 // 2, 1 // 2))
 
-function world_for(shape)
-    World((N, N, N), (dx, dx, dx), [shape], 0.0, aa)
-end
+geometry_for(shape) = Geometry([shape], 0.0, aa)
 
 c = (0.5, 0.5, 0.5)  # shared center
 
@@ -35,7 +32,7 @@ shapes = [
 
 fig = Figure(size = (960, 640))
 for (i, (name, shape)) in enumerate(shapes)
-    arr   = Array(world_for(shape))
+    arr   = rasterize(geometry_for(shape), region)
     row   = (i - 1) ÷ 3 + 1
     col   = (i - 1) % 3 + 1
     slice = name == "Capsule" ? arr[:, N ÷ 2, :] : arr[:, :, N ÷ 2]

@@ -9,19 +9,21 @@ export interp_init, interp_accumulate, interp_finalize
 """
     interp_init(interp, ::Type{U}) -> acc
 
-Return the initial accumulator value for an interpolation fold over sub-voxel samples.
+Initial accumulator value for a fold over sub-voxel samples.
 
-`U` is the element type of the fill value.
+# Arguments
+- `U`: element type of the fill value
 """
 function interp_init end
 
 """
     interp_accumulate(interp, acc, val, weight) -> acc
 
-Fold one `(val, weight)` pair into `acc`.
+Fold one `(val, weight)` pair into `acc`, once per sub-voxel sample.
 
-Called once per sub-voxel sample. Weights across all samples sum to one.
-`val` is either the shape's fill value or the background, depending on containment.
+# Arguments
+- `val`: the shape's fill value or the background, depending on containment
+- `weight`: weights across all samples sum to one
 """
 function interp_accumulate end
 
@@ -35,8 +37,7 @@ function interp_finalize end
 """
     LinearInterpolation <: AbstractInterpolation
 
-Weighted arithmetic mean of sub-voxel samples. The standard choice for scalar
-and vector fill values.
+Weighted arithmetic mean of sub-voxel samples.
 """
 struct LinearInterpolation <: AbstractInterpolation end
 
@@ -47,10 +48,9 @@ interp_finalize(::LinearInterpolation, acc) = acc
 """
     HarmonicInterpolation <: AbstractInterpolation
 
-Weighted harmonic mean of sub-voxel samples.
+Weighted harmonic mean of sub-voxel samples, for strictly positive quantities.
 
-Intended for strictly positive quantities. A zero sub-sample value collapses
-the voxel to zero (by design, via the `w/val → Inf → 1/Inf = 0` path).
+A zero sub-sample collapses the voxel to zero, via `w/val → Inf → 1/Inf = 0`.
 """
 struct HarmonicInterpolation <: AbstractInterpolation end
 
@@ -61,10 +61,8 @@ interp_finalize(::HarmonicInterpolation, acc) = one(typeof(acc)) / acc # Inf -> 
 """
     GeometricMeanInterpolation <: AbstractInterpolation
 
-Weighted geometric mean of sub-voxel samples.
-
-Intended for strictly positive quantities only. Implemented via
-`exp(∑ wᵢ log(vᵢ))`.
+Weighted geometric mean of sub-voxel samples, for strictly positive
+quantities, via `exp(∑ wᵢ log(vᵢ))`.
 """
 struct GeometricMeanInterpolation <: AbstractInterpolation end
 
@@ -75,10 +73,7 @@ interp_finalize(::GeometricMeanInterpolation, acc) = exp(acc)
 """
     MaxInterpolation <: AbstractInterpolation
 
-Take the maximum sub-voxel sample, ignoring weights.
-
-Useful when any sub-sample belonging to a shape should claim the whole voxel
-(for example: if any sub-sample is metal, the voxel should be metal).
+Maximum sub-voxel sample, ignoring weights.
 """
 struct MaxInterpolation <: AbstractInterpolation end
 
@@ -89,10 +84,9 @@ interp_finalize(::MaxInterpolation, acc) = acc
 """
     MinInterpolation <: AbstractInterpolation
 
-Take the minimum sub-voxel sample, ignoring weights.
+Minimum sub-voxel sample, ignoring weights.
 
-Conservative inclusion: a voxel is assigned a fill value only when all
-sub-samples fall inside the shape.
+A voxel gets a fill value only when all sub-samples are inside the shape.
 """
 struct MinInterpolation <: AbstractInterpolation end
 
@@ -103,10 +97,8 @@ interp_finalize(::MinInterpolation, acc) = acc
 """
     DielectricInterpolation <: AbstractInterpolation
 
-Linear interpolation of electric susceptibility χ for Maxwell dielectric filling.
-
-Equivalent to `LinearInterpolation` but named for clarity in electromagnetic
-simulation workflows where the fill value represents χ.
+Linear interpolation of electric susceptibility χ, equivalent to
+`LinearInterpolation`.
 """
 struct DielectricInterpolation <: AbstractInterpolation end
 interp_init(::DielectricInterpolation, ::Type{U}) where {U} = zero(U)
@@ -116,12 +108,11 @@ interp_finalize(::DielectricInterpolation, acc) = acc
 """
     MetalInterpolation <: AbstractInterpolation
 
-Nonlinear interpolation of complex electric susceptibility χ for metallic media.
+Nonlinear interpolation of complex electric susceptibility χ for metals.
 
 Linearly interpolates the complex refractive index ñ = n + iκ, then recovers
-χ = ñ² - 1. This gives Re(χ) = n² - κ² - 1 and Im(χ) = 2nκ.
-
-The fill value should be χ (not ñ). Method from Christiansen et al. (2019).
+χ = ñ² - 1, giving Re(χ) = n² - κ² - 1 and Im(χ) = 2nκ. The fill value must
+be χ, not ñ. Method from Christiansen et al. (2019).
 """
 struct MetalInterpolation <: AbstractInterpolation end
 interp_init(::MetalInterpolation, ::Type{U}) where {U} = zero(complex(float(U)))

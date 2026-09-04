@@ -1,10 +1,36 @@
 # API reference
 
-## World
+## Geometry and rasterization
 
 ```@docs
-World
+Geometry
 add_shape
+sample
+rasterize
+rasterize!
+```
+
+## Grids
+
+```@docs
+Region
+cells
+scale
+lower_corner
+upper_corner
+voxel_centers
+CompositeGrid
+regions
+nregions
+finest
+bounding_box
+coordinates
+cellvolumes
+refine
+CompositeField
+regionview
+eachregion
+regrid
 ```
 
 ## Shapes

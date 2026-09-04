@@ -14,17 +14,12 @@ using ..Interpolations: LinearInterpolation
 Rounded rod (Minkowski sum of a line segment and a sphere) defined by two
 endpoints `a`, `b` and a tube radius.
 
-A point is inside when its distance to segment `ab` is at most `radius`.
-The `fill_function` receives local coordinates `(dist_to_segment/radius, t, 0)`,
-where `t ∈ [0, 1]` is the projection parameter along the segment.
-
-Has an exact SDF.
-
 # Fields
 - `a`: first segment endpoint in world space
 - `b`: second segment endpoint in world space
 - `radius`: tube radius
-- `fill_function`: callable mapping local coordinates to a fill value
+- `fill_function`: maps local coords `(dist_to_segment/radius, t, 0)` to a
+  fill value, `t ∈ [0, 1]` along the segment
 - `interpolation`: blending strategy for anti-aliasing
 """
 struct FillableCapsule{T, F, I<:AbstractInterpolation} <: AbstractFillableShape
@@ -77,5 +72,16 @@ function Types.sdf(c::FillableCapsule{T}, point::NTuple{3,T}) where {T}
 end
 
 Types.has_exact_sdf(::FillableCapsule) = true
+
+"""
+    bounding_box(shape::FillableCapsule) -> (lower, upper)
+
+Exact axis-aligned bounding box: `min.(a,b) - radius` to `max.(a,b) + radius`.
+"""
+function Types.bounding_box(c::FillableCapsule{T}) where {T}
+    lo = min.(c.a, c.b) .- c.radius
+    hi = max.(c.a, c.b) .+ c.radius
+    return (Tuple(lo), Tuple(hi))
+end
 
 end # module

@@ -22,7 +22,7 @@ end
 """
     IntersectionShape{A, B} <: AbstractFillableShape
 
-CSG intersection of two shapes. A point is inside if it is inside both `a` and `b`.
+CSG intersection of two shapes. Inside if a point is inside both `a` and `b`.
 
 The SDF is `max(sdf(a, p), sdf(b, p))`. Fill always delegates to `a`.
 `has_exact_sdf` is `true` only when both operands have exact SDFs.
@@ -101,7 +101,7 @@ Base.in(p, s::ComplementShape) = !(p in s.a)
 Base.fill(s::UnionShape, vc, vs) = Tuple(vc) in s.a ? fill(s.a, vc, vs) : fill(s.b, vc, vs)
 Base.fill(s::IntersectionShape, vc, vs) = fill(s.a, vc, vs)
 Base.fill(s::DifferenceShape, vc, vs) = fill(s.a, vc, vs)
-# ComplementShape is meant to be used inside IntersectionShape, not rendered directly.
+# Meant to be used inside IntersectionShape, not rendered directly.
 Base.fill(s::ComplementShape, vc, vs) = fill(s.a, vc, vs)
 
 # SDFs: classic CSG distance combinators
@@ -115,5 +115,27 @@ Types.has_exact_sdf(s::UnionShape) = has_exact_sdf(s.a) && has_exact_sdf(s.b)
 Types.has_exact_sdf(s::IntersectionShape) = has_exact_sdf(s.a) && has_exact_sdf(s.b)
 Types.has_exact_sdf(s::DifferenceShape) = has_exact_sdf(s.a) && has_exact_sdf(s.b)
 Types.has_exact_sdf(s::ComplementShape) = has_exact_sdf(s.a)
+
+# bounding_box: combine the operands' boxes per the usual CSG set algebra.
+function Types.bounding_box(s::UnionShape)
+    loA, hiA = bounding_box(s.a)
+    loB, hiB = bounding_box(s.b)
+    return (min.(loA, loB), max.(hiA, hiB))
+end
+
+function Types.bounding_box(s::IntersectionShape)
+    loA, hiA = bounding_box(s.a)
+    loB, hiB = bounding_box(s.b)
+    return (max.(loA, loB), min.(hiA, hiB))
+end
+
+Types.bounding_box(s::DifferenceShape) = bounding_box(s.a)
+
+function Types.bounding_box(s::ComplementShape)
+    lo, _ = bounding_box(s.a)
+    T = eltype(lo)
+    inf = T(Inf)
+    return ((-inf, -inf, -inf), (inf, inf, inf))
+end
 
 end # module

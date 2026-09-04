@@ -30,7 +30,8 @@
         @test (0.75, 0.0, 0.0) in i        # in both (overlap region)
         @test !((0.0, 0.0, 0.0) in i)      # in A only
         @test !((1.5, 0.0, 0.0) in i)      # in B only
-        @test fill(i, (0.75, 0.0, 0.0), (1.0, 1.0, 1.0)) == 1.0  # delegates to A
+        # delegates to A
+        @test fill(i, (0.75, 0.0, 0.0), (1.0, 1.0, 1.0)) == 1.0
     end
 
     @testset "difference: in a but not b" begin
@@ -83,5 +84,53 @@
         nested = csg_diff(csg_union(A, B), C)
         @test !((0.0, 0.0, 0.0) in nested)   # carved out by C
         @test (1.5, 0.0, 0.0) in nested      # in B, outside C
+    end
+
+    @testset "bounding_box" begin
+        # A: sphere at origin, radius 1 -> box [-1,1]^3
+        # B: sphere at (1.5,0,0), radius 1 -> box [0.5,2.5]x[-1,1]x[-1,1]
+        @testset "union: componentwise min of lowers, max of uppers" begin
+            loA, hiA = bounding_box(A)
+            loB, hiB = bounding_box(B)
+            lo, hi = bounding_box(csg_union(A, B))
+            @test lo == min.(loA, loB)
+            @test hi == max.(hiA, hiB)
+            @test lo == (-1.0, -1.0, -1.0)
+            @test hi == (2.5, 1.0, 1.0)
+        end
+
+        @testset "intersection: componentwise max of lowers, min of uppers" begin
+            loA, hiA = bounding_box(A)
+            loB, hiB = bounding_box(B)
+            lo, hi = bounding_box(csg_intersect(A, B))
+            @test lo == max.(loA, loB)
+            @test hi == min.(hiA, hiB)
+            @test lo == (0.5, -1.0, -1.0)
+            @test hi == (1.0, 1.0, 1.0)
+        end
+
+        @testset "difference: box of the primary operand" begin
+            @test bounding_box(csg_diff(A, B)) == bounding_box(A)
+        end
+
+        @testset "complement: all-infinite" begin
+            lo, hi = bounding_box(csg_complement(A))
+            @test all(isinf, lo)
+            @test all(isinf, hi)
+        end
+
+        @testset "conservativeness (random points, nested CSG)" begin
+            C = FillableSphere((0.0, 0.0, 0.0), 0.5, 3.0)
+            for shape in (csg_union(A, B), csg_intersect(A, B), csg_diff(A, B),
+                          csg_diff(csg_union(A, B), C))
+                lo, hi = bounding_box(shape)
+                for _ in 1:2000
+                    p = ntuple(i -> 5.0 * (2*rand() - 1), 3)
+                    if p in shape
+                        @test all(lo[i] <= p[i] <= hi[i] for i in 1:3)
+                    end
+                end
+            end
+        end
     end
 end

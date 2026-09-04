@@ -7,6 +7,7 @@ makedocs(
     modules  = [
         VoxelShapes,
         VoxelShapes.Types,
+        VoxelShapes.Grids,
         VoxelShapes.Interpolations,
         VoxelShapes.Ellipsoids,
         VoxelShapes.Cuboids,
@@ -26,6 +27,7 @@ makedocs(
     ),
     pages = [
         "Getting started"  => "index.md",
+        "Grids and refinement" => "grids.md",
         "Shapes"           => "shapes.md",
         "Fill functions"   => "fills.md",
         "Anti-aliasing"    => "antialiasing.md",

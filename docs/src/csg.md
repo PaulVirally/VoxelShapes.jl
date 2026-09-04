@@ -13,7 +13,8 @@ csg_diff(a, b)        # inside a but not b
 csg_complement(a)     # everything outside a
 ```
 
-Fill always delegates to the first (left) operand. `csg_complement` is intended for use inside `csg_intersect`, not for direct rendering.
+Fill always delegates to the first (left) operand. Use `csg_complement`
+inside `csg_intersect`, not for direct rendering.
 
 ## Nesting
 
@@ -30,7 +31,10 @@ hollow_cropped = csg_diff(csg_diff(sphere, cube), inner)
 
 ## SDFs and adaptive AA
 
-`has_exact_sdf` on a CSG shape is `true` only when both operands have exact SDFs. That's conservative (a CSG SDF isn't always exact even when its parts are), but it's enough to let [`AdaptiveAntiAliasing`](@ref) skip boundary checks for clearly interior or exterior voxels.
+`has_exact_sdf` on a CSG shape is `true` only when both operands have exact
+SDFs. This is conservative: a CSG SDF isn't always exact even when its
+parts are. It still lets [`AdaptiveAntiAliasing`](@ref) skip boundary
+checks for clearly interior or exterior voxels.
 
 ## Example
 
@@ -38,14 +42,15 @@ hollow_cropped = csg_diff(csg_diff(sphere, cube), inner)
 using VoxelShapes
 
 N  = 80
-dx = 1.0 / N
+dx = 1 // N
 
 outer = FillableSphere((0.5, 0.5, 0.5), 0.3, 1.0)
 inner = FillableSphere((0.5, 0.5, 0.5), 0.22, 0.0)
 shell = csg_diff(outer, inner)
 
-world = World((N, N, N), (dx, dx, dx), [shell], 0.0, SubpixelAntiAliasing())
-arr   = Array(world)
+geometry  = Geometry([shell], 0.0, SubpixelAntiAliasing())
+region = Region((N, N, N), (dx, dx, dx), (1 // 2, 1 // 2, 1 // 2))
+arr    = rasterize(geometry, region)
 ```
 
 See the [API reference](@ref "API reference") for full signatures.

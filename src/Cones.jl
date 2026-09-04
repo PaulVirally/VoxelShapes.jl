@@ -12,24 +12,14 @@ using ..Interpolations: LinearInterpolation
 
 Axis-aligned cone or frustum centered at the midpoint between its two faces.
 
-The radius varies linearly from `base_radius` at the negative end of the axis
-(`-half_height`) to `top_radius` at the positive end (`+half_height`). Setting
-`top_radius = 0` gives a true cone; unequal nonzero values give a frustum.
-
-The longitudinal axis is selected by `axis` (1 = x, 2 = y, 3 = z).
-The `fill_function` receives local coordinates `(radial_fraction, axial_fraction, 0)`,
-where `radial_fraction = r / r_at_that_height` and
-`axial_fraction = axial_offset / half_height ∈ [-1, 1]`.
-
-No exact closed-form SDF is available; `has_exact_sdf` returns `false`.
-
 # Fields
 - `center_xyz`: center in world space
 - `base_radius`: radius at the `−half_height` face
-- `top_radius`: radius at the `+half_height` face
+- `top_radius`: radius at the `+half_height` face, 0 for a true cone
 - `half_height`: half the length along the longitudinal axis
 - `axis`: longitudinal axis index (1, 2, or 3)
-- `fill_function`: callable mapping local coordinates to a fill value
+- `fill_function`: maps local coords `(radial_fraction, axial_fraction, 0)`
+  to a fill value, `axial_fraction ∈ [-1, 1]`
 - `interpolation`: blending strategy for anti-aliasing
 """
 struct FillableCone{T, F, I<:AbstractInterpolation} <: AbstractFillableShape
@@ -87,5 +77,20 @@ function Base.fill(c::FillableCone{T}, voxel_center_xyz::NTuple{3,T}, voxel_size
 end
 
 # No exact closed-form SDF for a frustum.
+
+"""
+    bounding_box(shape::FillableCone) -> (lower, upper)
+
+Exact axis-aligned bounding box: `± half_height` along `axis`,
+`± max(base_radius, top_radius)` on the other two axes.
+"""
+function Types.bounding_box(c::FillableCone{T}) where {T}
+    ax = c.axis
+    ctr = c.center_xyz
+    r = max(c.base_radius, c.top_radius)
+    lower = ntuple(i -> ctr[i] - (i == ax ? c.half_height : r), 3)
+    upper = ntuple(i -> ctr[i] + (i == ax ? c.half_height : r), 3)
+    return (lower, upper)
+end
 
 end # module

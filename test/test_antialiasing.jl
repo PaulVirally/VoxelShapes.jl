@@ -1,6 +1,6 @@
 # Anti-aliasing strategies, exercised through `aa(shape, vc, vs, bg, strategy)`.
-# `aa` returns the background when the voxel is outside the shape, the fill value
-# when fully inside, and a blended value on the boundary.
+# `aa` returns the background when the voxel is outside the shape, the fill
+# value when fully inside, and a blended value on the boundary.
 
 @testset "AntiAliasing" begin
     sphere = FillableSphere((0.0, 0.0, 0.0), 1.0, 1.0)
@@ -48,10 +48,10 @@
     @testset "AdaptiveAntiAliasing skips the stencil away from the boundary" begin
         cube = FillableCube((0.0, 0.0, 0.0), 2.0, 1.0)   # exact SDF
         a = AdaptiveAntiAliasing(SuperResolutionAntiAliasing(2))
-        # Far inside -> fill, far outside -> background, via the single SDF check.
+        # Far inside -> fill, far outside -> background, via one SDF check.
         @test aa(cube, (0.0, 0.0, 0.0), (0.1, 0.1, 0.1), 0.0, a) ≈ 1.0
         @test aa(cube, (5.0, 0.0, 0.0), (0.1, 0.1, 0.1), 0.0, a) ≈ 0.0
-        # For a shape without an exact SDF it always defers to the inner strategy.
+        # Without an exact SDF it defers to the inner strategy.
         sph = FillableSphere((0.0, 0.0, 0.0), 1.0, 1.0)
         @test aa(sph, (0.0, 0.0, 0.0), (0.1, 0.1, 0.1), 0.0, a) ≈ 1.0
     end

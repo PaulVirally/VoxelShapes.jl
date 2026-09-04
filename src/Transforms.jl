@@ -12,23 +12,9 @@ using ..Types
 
 Wrapper that rotates any `AbstractFillableShape` about a pivot point.
 
-World-space points are mapped to local frame by `R * (p - pivot) + pivot` before
-being passed to the inner shape. The rotation matrix `R` is world-to-local
-(orthonormal, 3×3). The voxel size is passed unchanged, which is a good
-approximation when voxels are small relative to the feature scale.
-
-`has_exact_sdf` delegates to the inner shape; rotation is isometric so
-distances are preserved.
-
-Construct using one of:
-- `Rotated(inner, R)`: explicit `SMatrix{3,3}`, pivot at `center(inner)`
-- `Rotated(inner, R, pivot)`: explicit matrix and pivot
-- `Rotated(inner, (αx, αy, αz))`: intrinsic ZYX Euler angles (radians)
-- `Rotated(inner, axis, angle)`: axis-angle (axis is normalized automatically)
-
 # Fields
 - `inner`: the wrapped shape
-- `R`: world-to-local rotation matrix
+- `R`: world-to-local rotation matrix, applied as `R * (p - pivot) + pivot`
 - `pivot`: world-space point rotated about
 """
 struct Rotated{S<:AbstractFillableShape, T} <: AbstractFillableShape
@@ -92,5 +78,31 @@ Types.sdf(w::Rotated{S,T}, point::NTuple{3,T}) where {S,T} =
     sdf(w.inner, _to_local(point, w))
 
 Types.has_exact_sdf(w::Rotated) = has_exact_sdf(w.inner)
+
+"""
+    bounding_box(shape::Rotated) -> (lower, upper)
+
+All-infinite if the inner box is infinite along any axis. Otherwise it's the
+componentwise min/max of the inner box's 8 corners mapped to world space
+(`world = R' * (c - pivot) + pivot`).
+"""
+function Types.bounding_box(w::Rotated{S,T}) where {S,T}
+    lo, hi = bounding_box(w.inner)
+    if any(isinf, lo) || any(isinf, hi)
+        inf = T(Inf)
+        return ((-inf, -inf, -inf), (inf, inf, inf))
+    end
+    lo3 = SVector{3,T}(lo[1], lo[2], lo[3])
+    hi3 = SVector{3,T}(hi[1], hi[2], hi[3])
+    corners = ntuple(8) do k
+        x = (k - 1) & 1 == 0 ? lo3[1] : hi3[1]
+        y = (k - 1) & 2 == 0 ? lo3[2] : hi3[2]
+        z = (k - 1) & 4 == 0 ? lo3[3] : hi3[3]
+        w.R' * (SVector{3,T}(x, y, z) - w.pivot) + w.pivot
+    end
+    lower = ntuple(i -> minimum(c[i] for c in corners), 3)
+    upper = ntuple(i -> maximum(c[i] for c in corners), 3)
+    return (lower, upper)
+end
 
 end # module

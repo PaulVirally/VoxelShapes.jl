@@ -13,19 +13,13 @@ using ..Interpolations: LinearInterpolation
 
 Finite axis-aligned cylinder centered at `center_xyz`.
 
-The longitudinal axis is selected by `axis` (1 = x, 2 = y, 3 = z). The
-`fill_function` receives local coordinates `(radial_fraction, axial_fraction, 0)`,
-where `radial_fraction = r/radius ∈ [0, 1]` and
-`axial_fraction = axial_offset/half_height ∈ [-1, 1]`.
-
-Has an exact SDF.
-
 # Fields
 - `center_xyz`: center in world space
 - `radius`: circular cross-section radius
 - `half_height`: half the length along the longitudinal axis
 - `axis`: longitudinal axis index (1, 2, or 3)
-- `fill_function`: callable mapping local coordinates to a fill value
+- `fill_function`: maps local coords `(radial_fraction, axial_fraction, 0)`
+  to a fill value, both ranges `∈ [0, 1]` and `[-1, 1]`
 - `interpolation`: blending strategy for anti-aliasing
 """
 struct FillableCylinder{T, F, I<:AbstractInterpolation} <: AbstractFillableShape
@@ -95,5 +89,19 @@ function Types.sdf(c::FillableCylinder{T}, point::NTuple{3,T}) where {T}
 end
 
 Types.has_exact_sdf(::FillableCylinder) = true
+
+"""
+    bounding_box(shape::FillableCylinder) -> (lower, upper)
+
+Exact axis-aligned bounding box: `± half_height` along `axis`, `± radius` on
+the other two axes.
+"""
+function Types.bounding_box(c::FillableCylinder{T}) where {T}
+    ax = c.axis
+    ctr = c.center_xyz
+    lower = ntuple(i -> ctr[i] - (i == ax ? c.half_height : c.radius), 3)
+    upper = ntuple(i -> ctr[i] + (i == ax ? c.half_height : c.radius), 3)
+    return (lower, upper)
+end
 
 end # module

@@ -1,8 +1,8 @@
 # 06_rotation.jl
 #
-# The Rotated wrapper tilts any shape in world space. The underlying shape
-# stays axis-aligned; Rotated maps each query point into local frame before
-# the containment test. This means every shape gets rotation for free.
+# The Rotated wrapper tilts any shape in world space. The shape itself stays
+# axis-aligned; Rotated maps each query point into its local frame before the
+# containment test. This gives every shape rotation for free.
 #
 # Three ways to specify the rotation:
 #   Rotated(shape, (αx, αy, αz))        intrinsic ZYX Euler angles (radians)
@@ -16,7 +16,7 @@ using VoxelShapes
 using GLMakie
 
 N  = 80
-dx = 1.0 / N
+region = Region((N, N, N), (1 // N, 1 // N, 1 // N), (1 // 2, 1 // 2, 1 // 2))
 c  = (0.5, 0.5, 0.5)
 aa = SubpixelAntiAliasing()
 
@@ -32,8 +32,8 @@ rotations = [
 
 fig = Figure(size = (900, 260))
 for (i, (label, shape)) in enumerate(rotations)
-    world = World((N, N, N), (dx, dx, dx), [shape], 0.0, aa)
-    arr   = Array(world)
+    geometry = Geometry([shape], 0.0, aa)
+    arr   = rasterize(geometry, region)
     ax    = Axis(fig[1, i], title = label, aspect = DataAspect())
     heatmap!(ax, arr[:, :, N ÷ 2], colormap = :grays, colorrange = (0, 1))
     hidedecorations!(ax)

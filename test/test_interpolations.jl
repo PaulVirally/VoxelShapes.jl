@@ -1,6 +1,7 @@
-# Interpolation fold protocol: interp_init / interp_accumulate / interp_finalize.
-# Each interpolation combines weighted (value, weight) sub-voxel samples into one
-# blended value. Weights across all samples sum to one.
+# Interpolation fold protocol: interp_init / interp_accumulate /
+# interp_finalize. Each interpolation combines weighted (value, weight)
+# sub-voxel samples into one blended value. Weights across all samples sum to
+# one.
 
 # Helper: fold a list of (value, weight) pairs through an interpolation scheme.
 function blend(interp, ::Type{U}, samples) where {U}
@@ -66,7 +67,7 @@ end
     end
 
     @testset "MetalInterpolation via complex refractive index" begin
-        # Fill value is χ; ñ = sqrt(1 + χ); interpolate ñ; recover χ = ñ² - 1.
+        # Fill value is χ. ñ = sqrt(1 + χ). Interpolate ñ, recover χ = ñ² - 1.
         mp = MetalInterpolation()
         # A single full-weight sample is the identity: χ in, χ out.
         @test blend(mp, Float64, ((3.0, 1.0),)) ≈ 3.0

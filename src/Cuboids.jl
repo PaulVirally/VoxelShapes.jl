@@ -87,4 +87,14 @@ end
 
 Types.has_exact_sdf(::FillableCuboid) = true
 
+"""
+    bounding_box(shape::FillableCuboid) -> (lower, upper)
+
+Exact axis-aligned bounding box: `center ± half_lengths`.
+"""
+function Types.bounding_box(c::FillableCuboid{T}) where {T}
+    ctr, hl = c.center_xyz, c.half_lengths_xyz
+    return (Tuple(ctr .- hl), Tuple(ctr .+ hl))
+end
+
 end # module

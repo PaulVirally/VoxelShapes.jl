@@ -11,25 +11,15 @@ using ..Interpolations: LinearInterpolation
 """
     FillableTorus{T, F, I} <: AbstractFillableShape
 
-Torus centered at `center_xyz`, with the ring lying in the plane perpendicular to `axis`.
-
-`major_radius` (R) is the distance from the torus center to the tube center.
-`minor_radius` (r) is the tube radius. A point is inside when
-`(ρ - R)² + z² ≤ r²`, where ρ is the in-plane radial distance and z is the
-axial distance from the center.
-
-The longitudinal axis is selected by `axis` (1 = x, 2 = y, 3 = z; default 3
-puts the ring in the xy-plane). The `fill_function` receives local coordinates
-`(ρ/R, dist_to_tube_center/r, 0)`.
-
-Has an exact SDF.
+Torus centered at `center_xyz`, ring in the plane perpendicular to `axis`.
 
 # Fields
 - `center_xyz`: center in world space
-- `major_radius`: ring radius (center to tube center)
-- `minor_radius`: tube radius
+- `major_radius`: ring radius (center to tube center), R in `(ρ-R)²+z²≤r²`
+- `minor_radius`: tube radius, r in `(ρ-R)²+z²≤r²`
 - `axis`: symmetry axis index (1, 2, or 3)
-- `fill_function`: callable mapping local coordinates to a fill value
+- `fill_function`: maps local coords `(ρ/R, dist_to_tube_center/r, 0)` to a
+  fill value
 - `interpolation`: blending strategy for anti-aliasing
 """
 struct FillableTorus{T, F, I<:AbstractInterpolation} <: AbstractFillableShape
@@ -57,7 +47,7 @@ Types.center(t::FillableTorus) = t.center_xyz
 """
     major_radius(shape) -> T
 
-Return the major radius of a torus (distance from the torus center to the tube center).
+Return the major radius of a torus (center to tube center).
 """
 major_radius(t::FillableTorus) = t.major_radius
 
@@ -98,5 +88,20 @@ function Types.sdf(t::FillableTorus{T}, point::NTuple{3,T}) where {T}
 end
 
 Types.has_exact_sdf(::FillableTorus) = true
+
+"""
+    bounding_box(shape::FillableTorus) -> (lower, upper)
+
+Exact axis-aligned bounding box: `± minor_radius` along `axis`,
+`± (major_radius + minor_radius)` on the other two axes.
+"""
+function Types.bounding_box(t::FillableTorus{T}) where {T}
+    ax = t.axis
+    ctr = t.center_xyz
+    r_out = t.major_radius + t.minor_radius
+    lower = ntuple(i -> ctr[i] - (i == ax ? t.minor_radius : r_out), 3)
+    upper = ntuple(i -> ctr[i] + (i == ax ? t.minor_radius : r_out), 3)
+    return (lower, upper)
+end
 
 end # module
