@@ -1,8 +1,8 @@
 # 06_rotation.jl
 #
-# The Rotated wrapper tilts any shape in world space. The underlying shape
-# stays axis-aligned; Rotated maps each query point into local frame before
-# the containment test. This means every shape gets rotation for free.
+# The Rotated wrapper tilts any shape in world space. The shape itself stays
+# axis-aligned; Rotated maps each query point into its local frame before the
+# containment test. This gives every shape rotation for free.
 #
 # Three ways to specify the rotation:
 #   Rotated(shape, (αx, αy, αz))        intrinsic ZYX Euler angles (radians)

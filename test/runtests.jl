@@ -4,15 +4,15 @@ using VoxelShapes
 using StaticArrays
 using LinearAlgebra: norm
 
-# The suite is split into two passes.
+# The suite has two passes.
 #
-# Pass 1 (TDD): tests written against the documented behavior of the public
-# API, treating the implementation as a black box. Grouped by feature area.
+# Pass 1 (TDD): tests against the public API's documented behavior. The
+# implementation is a black box here. Grouped by feature area.
 #
-# Pass 2 (integration): tests added after reading the implementation, covering
-# interactions between components that the black-box tests did not reach
-# (anti-aliasing x interpolation, CSG x SDF combinators, rotation isometry,
-# the rasterization pipeline, etc.).
+# Pass 2 (integration): tests added after reading the implementation. These
+# cover interactions the black-box tests missed (anti-aliasing x
+# interpolation, CSG x SDF combinators, rotation isometry, the rasterization
+# pipeline, etc.).
 
 @testset "VoxelShapes.jl" begin
     include("test_aqua.jl")

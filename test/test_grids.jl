@@ -1,8 +1,4 @@
 # Grids: Region and CompositeGrid geometry.
-#
-# The composite-grid cases are ported from GilaElectromagnetics.jl's
-# test/cmpVolTest.jl (branch paul-gila-operators) so that VoxelShapes produces
-# the same tilings, in the same region order, as Gila's GlaCmpVol.
 
 const grdScl16 = (1 // 16, 1 // 16, 1 // 16)
 const grdScl32 = (1 // 32, 1 // 32, 1 // 32)
@@ -45,7 +41,8 @@ end
     # Default center is the origin
     @test Region((2, 2, 2), grdScl16) == Region((2, 2, 2), grdScl16, grdCtr0)
 
-    # Voxel centers: cells(r) values per axis, offset half a voxel from the corner
+    # Voxel centers: cells(r) values per axis, offset half a voxel from the
+    # corner
     vc = voxel_centers(r)
     @test length(vc) == 3
     for dir in 1:3
@@ -218,8 +215,8 @@ end
           [cells(reg) for reg in regions(g)[2:end]]
     @test bounding_box(g2) == bounding_box(g)
 
-    # A sub-box centered on the core leaves 1/32 slabs two cells wide, which
-    # gives an odd cell count per partition against the 1/16 slabs
+    # A sub-box centered on the core leaves 1/32 slabs two cells wide. That
+    # gives an odd cell count per partition against the 1/16 slabs.
     @test_throws ArgumentError refine(g, (grdCtr0, (1 // 16, 1 // 16, 1 // 16)))
 end
 
@@ -322,7 +319,7 @@ end
     @test all(celVol[(nCrs + 1):end] .≈ Float64(prod(scale(rFin))))
     # The weighted sum over the cells is the domain volume
     @test sum(celVol) ≈ Float64(tiled_volume(g))
-    # cellvolumes lines up with the volumes coordinates reports
+    # cellvolumes matches the volumes reported by coordinates
     @test celVol ≈ [trp[2] for trp in crd]
 
     # Region order matters for equality

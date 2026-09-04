@@ -5,10 +5,7 @@ export ConstantFill, RadialGradient, AxialGradient
 """
     ConstantFill{V}
 
-Fill function that returns the same value everywhere inside a shape.
-
-Named `isbits`-compatible alternative to the `_ -> fill_val` closure, which
-avoids heap allocation on GPUs.
+`isbits`-compatible fill function that returns `value` everywhere.
 
 # Fields
 - `value`: the constant fill value
@@ -21,13 +18,8 @@ end
 """
     RadialGradient{V}
 
-Fill function that interpolates linearly from `inner_value` at the shape center
-to `outer_value` at the shape surface.
-
-The radial coordinate is `r = norm(local_coords)`, clamped to `[0, 1]`.
-Local coordinates follow each shape's own convention: for spheres and ellipsoids,
-`r = 1` at the surface; for cylinders the radial and axial coordinates are
-independent, so behavior at `r > 1` may be unexpected.
+Fill function that interpolates linearly along `r = norm(local_coords)`,
+clamped to `[0, 1]`.
 
 # Fields
 - `inner_value`: value at `r = 0`
@@ -45,10 +37,8 @@ end
 """
     AxialGradient{V}
 
-Fill function that interpolates linearly along one local axis of a shape.
-
-The axis coordinate ranges from -1 to +1 across the shape. `v0` is returned
-at `-1` and `v1` at `+1`; values are clamped outside that range.
+Fill function that interpolates linearly along one local axis of a shape,
+clamped outside `[-1, 1]`.
 
 # Fields
 - `axis`: which local coordinate to interpolate along (1, 2, or 3)

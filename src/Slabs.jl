@@ -13,16 +13,11 @@ using ..Interpolations: LinearInterpolation
 
 The half-space on the inward side of a plane.
 
-A point `p` is inside when `dot(p - point, normal) ≤ 0`, where `normal` is the
-outward unit normal. The `fill_function` receives local coordinates
-`(signed_distance, 0, 0)` where `signed_distance = dot(p - point, normal)`.
-
-Has an exact SDF.
-
 # Fields
 - `point`: any point on the bounding plane
 - `normal`: outward unit normal (normalized on construction)
-- `fill_function`: callable mapping local coordinates to a fill value
+- `fill_function`: maps local coords `(signed_distance, 0, 0)` to a fill
+  value, `signed_distance = dot(p - point, normal)`
 - `interpolation`: blending strategy for anti-aliasing
 """
 struct FillableHalfSpace{T, F, I<:AbstractInterpolation} <: AbstractFillableShape
@@ -56,7 +51,7 @@ function Base.fill(h::FillableHalfSpace{T}, voxel_center_xyz::NTuple{3,T}, voxel
     return h.fill_function((d, zero(T), zero(T)))
 end
 
-# Exact SDF: signed distance to the plane (positive outside = in direction of normal)
+# Exact SDF: signed distance to the plane (positive outside, along normal)
 Types.sdf(h::FillableHalfSpace{T}, point::NTuple{3,T}) where {T} =
     dot(SVector{3,T}(point) - h.point, h.normal)
 
@@ -65,10 +60,9 @@ Types.has_exact_sdf(::FillableHalfSpace) = true
 """
     bounding_box(shape::FillableHalfSpace) -> (lower, upper)
 
-On an axis where the normal is (anti-)aligned with it (`abs(normal[i]) ≈ 1`),
-the half-space is bounded on the side the normal points away from: a `+1`
-normal bounds above at `point[i]`, a `-1` normal bounds below at `point[i]`.
-Every other axis is unbounded (`-Inf, Inf`).
+On an axis (anti-)aligned with the normal (`abs(normal[i]) ≈ 1`), bounded at
+`point[i]` on the side the normal points away from; other axes are unbounded
+(`-Inf, Inf`).
 """
 function Types.bounding_box(h::FillableHalfSpace{T}) where {T}
     lower = ntuple(3) do i
@@ -87,18 +81,12 @@ end
 
 Infinite planar slab: points within `half_thickness` of a reference plane.
 
-A point `p` is inside when `|dot(p - point, normal)| ≤ half_thickness`. The
-`fill_function` receives local coordinates `(d / half_thickness, 0, 0)`, where
-`d = dot(p - point, normal)`, so the coordinate ranges from -1 to +1 across
-the slab.
-
-Has an exact SDF.
-
 # Fields
 - `point`: any point on the midplane
 - `normal`: unit normal to the slab (normalized on construction)
 - `half_thickness`: half the slab thickness
-- `fill_function`: callable mapping local coordinates to a fill value
+- `fill_function`: maps local coords `(d / half_thickness, 0, 0)` to a fill
+  value, `d = dot(p - point, normal)`, ranges -1 to +1 across the slab
 - `interpolation`: blending strategy for anti-aliasing
 """
 struct FillableSlab{T, F, I<:AbstractInterpolation} <: AbstractFillableShape
@@ -142,9 +130,8 @@ Types.has_exact_sdf(::FillableSlab) = true
 """
     bounding_box(shape::FillableSlab) -> (lower, upper)
 
-On an axis where the normal is (anti-)aligned with it (`abs(normal[i]) ≈ 1`),
-the slab is bounded by `point[i] ± half_thickness`. Every other axis is
-unbounded (`-Inf, Inf`), since the slab extends infinitely within its plane.
+On an axis (anti-)aligned with the normal (`abs(normal[i]) ≈ 1`), bounded by
+`point[i] ± half_thickness`; other axes are unbounded (`-Inf, Inf`).
 """
 function Types.bounding_box(s::FillableSlab{T}) where {T}
     lower = ntuple(i -> isapprox(abs(s.normal[i]), one(T)) ? s.point[i] - s.half_thickness : T(-Inf), 3)

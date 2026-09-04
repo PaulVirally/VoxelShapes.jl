@@ -12,23 +12,9 @@ using ..Types
 
 Wrapper that rotates any `AbstractFillableShape` about a pivot point.
 
-World-space points are mapped to local frame by `R * (p - pivot) + pivot` before
-being passed to the inner shape. The rotation matrix `R` is world-to-local
-(orthonormal, 3×3). The voxel size is passed unchanged, which is a good
-approximation when voxels are small relative to the feature scale.
-
-`has_exact_sdf` delegates to the inner shape; rotation is isometric so
-distances are preserved.
-
-Construct using one of:
-- `Rotated(inner, R)`: explicit `SMatrix{3,3}`, pivot at `center(inner)`
-- `Rotated(inner, R, pivot)`: explicit matrix and pivot
-- `Rotated(inner, (αx, αy, αz))`: intrinsic ZYX Euler angles (radians)
-- `Rotated(inner, axis, angle)`: axis-angle (axis is normalized automatically)
-
 # Fields
 - `inner`: the wrapped shape
-- `R`: world-to-local rotation matrix
+- `R`: world-to-local rotation matrix, applied as `R * (p - pivot) + pivot`
 - `pivot`: world-space point rotated about
 """
 struct Rotated{S<:AbstractFillableShape, T} <: AbstractFillableShape
@@ -96,11 +82,9 @@ Types.has_exact_sdf(w::Rotated) = has_exact_sdf(w.inner)
 """
     bounding_box(shape::Rotated) -> (lower, upper)
 
-If the inner shape's bounding box is infinite along any axis, returns an
-all-infinite box (a rotated infinite region cannot be tightened by an
-axis-aligned box). Otherwise maps the 8 corners of the inner box from local to
-world space (`world = R' * (c - pivot) + pivot`) and takes the componentwise
-min/max.
+All-infinite if the inner box is infinite along any axis. Otherwise it's the
+componentwise min/max of the inner box's 8 corners mapped to world space
+(`world = R' * (c - pivot) + pivot`).
 """
 function Types.bounding_box(w::Rotated{S,T}) where {S,T}
     lo, hi = bounding_box(w.inner)

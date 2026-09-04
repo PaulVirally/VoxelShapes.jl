@@ -17,7 +17,8 @@
         # The anti-aliasing strategy defaults to NoAntiAliasing.
         @test Geometry((sphere,), 0.0).aa == NoAntiAliasing()
         @test Geometry([sphere], 0.0).aa == NoAntiAliasing()
-        # A geometry of isbits shapes is itself isbits, which the GPU kernel needs.
+        # A geometry of isbits shapes is itself isbits. The GPU kernel needs
+        # this.
         @test isbits(st)
     end
 
@@ -66,7 +67,8 @@
         c1 = FillableCube((0.5, 0.5, 0.5), 10.0, 1.0)
         c2 = FillableCube((0.5, 0.5, 0.5), 10.0, 2.0)
         reg = Region((1, 1, 1), (1 // 1, 1 // 1, 1 // 1), (1 // 2, 1 // 2, 1 // 2))
-        @test rasterize(Geometry([c1, c2], 0.0), reg)[1, 1, 1] == 1.0   # first listed wins
+        # first listed wins
+        @test rasterize(Geometry([c1, c2], 0.0), reg)[1, 1, 1] == 1.0
         @test rasterize(Geometry([c2, c1], 0.0), reg)[1, 1, 1] == 2.0
     end
 

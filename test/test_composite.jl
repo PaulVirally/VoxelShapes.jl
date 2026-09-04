@@ -2,8 +2,8 @@
 # the per-region views, regrid, and refine driven by a shape's bounding box.
 
 @testset "CompositeField" begin
-    # Gila's reference refinement: an 8x8x8 volume at 1/16 refined by 2 inside a
-    # box of side 1/8 about the origin gives 7 regions.
+    # An 8x8x8 volume at 1/16 refined by 2 inside a box of side 1/8 about the
+    # origin gives 7 regions.
     refgrid() = refine(Region((8, 8, 8), (1 // 16, 1 // 16, 1 // 16)),
                        ((0 // 1, 0 // 1, 0 // 1), (1 // 8, 1 // 8, 1 // 8)))
 
@@ -20,8 +20,8 @@
         @test regions(field) == regions(grid)
         @test nregions(field) == 7
 
-        # regionview shapes line up with the region cell counts, and the views
-        # tile the flat vector in region order.
+        # regionview shapes match the region cell counts, and the views tile
+        # the flat vector in region order.
         blocks = collect(eachregion(field))
         @test length(blocks) == nregions(grid)
         @test [size(b) for b in blocks] == [cells(r) for r in regions(grid)]
@@ -61,13 +61,13 @@
         @test size(uniform) == (16, 16, 16)
         @test size(uniform) == cells(fine)
 
-        # The sphere fits inside the refined core, so away from the core every
-        # region is empty and the coarse cells replicate to zero. The whole
-        # uniform array therefore equals a plain rasterize at the finest scale.
+        # The sphere fits inside the refined core, so every other region is
+        # empty and its coarse cells replicate to zero. The uniform array
+        # equals a plain rasterize at the finest scale.
         dense = rasterize(geometry, fine)
         @test uniform == dense
 
-        # The core block itself is exactly the matching slice of the dense array.
+        # The core block is exactly the matching slice of the dense array.
         core = regionview(field, 1)
         @test size(core) == (8, 8, 8)
         @test collect(core) == dense[5:12, 5:12, 5:12]
@@ -177,8 +177,8 @@
     end
 
     @testset "refine around a shape with no bounding box refines everything" begin
-        # A half space normal to a diagonal is unbounded on every axis, so the
-        # clamped box is the whole grid and every region is carved.
+        # A half space with a diagonal normal is unbounded on every axis. The
+        # clamped box is the whole grid, so every region is carved.
         base = Region((8, 8, 8), (1 // 16, 1 // 16, 1 // 16))
         half = FillableHalfSpace((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), 1.0)
         grid = refine(base, half)

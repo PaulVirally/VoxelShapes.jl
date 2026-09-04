@@ -1,11 +1,11 @@
 # 01_hello_sphere.jl
 #
-# The minimal VoxelShapes example. One sphere, one Geometry, one Region.
+# The simplest VoxelShapes example: one sphere, one Geometry, one Region.
 #
-# A Geometry describes what to draw: the shapes, the background value, and the
-# anti-aliasing strategy. A Region describes where to sample: a voxel grid
-# geometry. rasterize(geometry, region) runs the rasterizer and returns a plain
-# Julia array you can slice and plot.
+# A Geometry says what to draw: the shapes, a background value, and an
+# anti-aliasing strategy. A Region says where to sample: a voxel grid.
+# rasterize(geometry, region) runs the rasterizer and returns a plain Julia
+# array you can slice and plot.
 #
 # Run from this directory:
 #   julia --project=. 01_hello_sphere.jl

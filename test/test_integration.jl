@@ -1,15 +1,14 @@
 # Pass 2: cross-cutting behavior that the per-feature tests above don't reach.
-# These were added after reading the implementation and target the seams between
-# components.
+# Targets the seams between components.
 
 @testset "Integration" begin
     # A 3x3x3 grid of unit voxels with its lower corner at the origin.
     unitgrid() = Region((3, 3, 3), (1 // 1, 1 // 1, 1 // 1), (3 // 2, 3 // 2, 3 // 2))
 
     @testset "interpolation flows through anti-aliasing" begin
-        # On a boundary voxel, the interpolation scheme attached to the shape
-        # decides how sub-samples combine. Max claims the voxel if ANY sub-sample
-        # is inside; Min only if ALL are.
+        # On a boundary voxel, the shape's interpolation decides how
+        # sub-samples combine. Max claims the voxel if any sub-sample is
+        # inside, min only if all of them are.
         plane = (0.0, 0.0, 1.0)
         h_max = FillableHalfSpace((0.0, 0.0, 0.0), plane, 1.0; interpolation=MaxInterpolation())
         h_min = FillableHalfSpace((0.0, 0.0, 0.0), plane, 1.0; interpolation=MinInterpolation())
@@ -20,13 +19,13 @@
     end
 
     @testset "AdaptiveAntiAliasing is safe on shapes without an SDF" begin
-        # A cone has no exact SDF, so Adaptive must NOT call sdf on it; it should
-        # defer to the inner strategy and still produce the interior fill.
+        # A cone has no exact SDF. Adaptive must not call sdf on it and
+        # instead defers to the inner strategy.
         cone = FillableCone((0.0, 0.0, 0.0), 1.0, 0.0, 1.0, 1.0)
         a = AdaptiveAntiAliasing(SuperResolutionAntiAliasing(2))
         @test aa(cone, (0.0, 0.0, -0.9), (0.05, 0.05, 0.05), 0.0, a) ≈ 1.0
 
-        # By contrast, SubpixelAntiAliasing requires an SDF, so it errors on a cone.
+        # SubpixelAntiAliasing requires an SDF, so it errors on a cone.
         @test_throws MethodError aa(cone, (0.0, 0.0, 0.0), (0.1, 0.1, 0.1), 0.0, SubpixelAntiAliasing())
     end
 
@@ -41,26 +40,26 @@
     end
 
     @testset "the background value is a transparency sentinel" begin
-        # A shape that covers the voxel but evaluates to the background value is
-        # treated as transparent, so evaluation falls through to the next shape.
+        # A shape that evaluates to the background value counts as
+        # transparent, so evaluation falls through to the next shape.
         c1 = FillableCube((0.5, 0.5, 0.5), 10.0, 0.0)   # fill equals background
         c2 = FillableCube((0.5, 0.5, 0.5), 10.0, 5.0)
         reg = Region((1, 1, 1), (1 // 1, 1 // 1, 1 // 1), (1 // 2, 1 // 2, 1 // 2))
-        @test rasterize(Geometry([c1, c2], 0.0), reg)[1, 1, 1] == 5.0   # c1 is transparent, c2 shows through
+        # c1 is transparent, so c2 shows through.
+        @test rasterize(Geometry([c1, c2], 0.0), reg)[1, 1, 1] == 5.0
 
         # With no lower layer to show through, the voxel stays the background.
         @test rasterize(Geometry([c1], 0.0), reg)[1, 1, 1] == 0.0
     end
 
     @testset "gradient fill rasterized through a Geometry" begin
-        # The convenience constructors wrap fill_val in a closure, so a gradient
-        # must be supplied through the struct's inner constructor as the
-        # fill_function (per the README).
+        # The convenience constructors wrap fill_val in a closure. A gradient
+        # must go through the struct's inner constructor as fill_function.
         g = RadialGradient(1.0, 0.0)
         shape = FillableEllipsoid{Float64, typeof(g), LinearInterpolation}(
             SVector(1.5, 1.5, 1.5), SVector(0.6, 0.6, 0.6), g, LinearInterpolation())
         arr = rasterize(Geometry([shape], 0.0), unitgrid())
-        # The center voxel sits at the sphere center -> local coords (0,0,0) -> inner.
+        # The center voxel is at the sphere center: local coords (0,0,0).
         @test arr[2, 2, 2] ≈ 1.0
     end
 
@@ -82,11 +81,11 @@
         au = rasterize(Geometry([box], 0.0), reg)
         ar = rasterize(Geometry([rot], 0.0), reg)
 
-        @test au[1, 3, 3] == 1.0          # unrotated: filled along x
+        @test au[1, 3, 3] == 1.0   # unrotated: filled along x
         @test au[3, 1, 3] == 0.0
-        @test ar[3, 1, 3] == 1.0          # rotated: filled along y
+        @test ar[3, 1, 3] == 1.0   # rotated: filled along y
         @test ar[1, 3, 3] == 0.0
-        @test sum(au) == sum(ar)          # rotation preserves the filled count here
+        @test sum(au) == sum(ar)   # rotation preserves the filled count
     end
 
     @testset "vector-valued fill through a Geometry with interpolation" begin
@@ -99,11 +98,11 @@
     end
 
     @testset "anti-aliased geometry produces partial-coverage values" begin
-        # A sphere boundary with super-resolution should yield voxels strictly
+        # A sphere boundary with super-resolution yields voxels strictly
         # between background and fill somewhere on the surface.
         s = FillableSphere((1.5, 1.5, 1.5), 1.0, 1.0)
         arr = rasterize(Geometry([s], 0.0, SuperResolutionAntiAliasing(4)), unitgrid())
-        @test any(v -> 0.0 < v < 1.0, arr)        # some boundary blending occurred
-        @test all(v -> 0.0 <= v <= 1.0, arr)      # stays within [bg, fill]
+        @test any(v -> 0.0 < v < 1.0, arr)     # boundary blending occurred
+        @test all(v -> 0.0 <= v <= 1.0, arr)   # stays within [bg, fill]
     end
 end

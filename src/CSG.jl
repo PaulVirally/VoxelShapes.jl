@@ -22,7 +22,7 @@ end
 """
     IntersectionShape{A, B} <: AbstractFillableShape
 
-CSG intersection of two shapes. A point is inside if it is inside both `a` and `b`.
+CSG intersection of two shapes. Inside if a point is inside both `a` and `b`.
 
 The SDF is `max(sdf(a, p), sdf(b, p))`. Fill always delegates to `a`.
 `has_exact_sdf` is `true` only when both operands have exact SDFs.
@@ -101,7 +101,7 @@ Base.in(p, s::ComplementShape) = !(p in s.a)
 Base.fill(s::UnionShape, vc, vs) = Tuple(vc) in s.a ? fill(s.a, vc, vs) : fill(s.b, vc, vs)
 Base.fill(s::IntersectionShape, vc, vs) = fill(s.a, vc, vs)
 Base.fill(s::DifferenceShape, vc, vs) = fill(s.a, vc, vs)
-# ComplementShape is meant to be used inside IntersectionShape, not rendered directly.
+# Meant to be used inside IntersectionShape, not rendered directly.
 Base.fill(s::ComplementShape, vc, vs) = fill(s.a, vc, vs)
 
 # SDFs: classic CSG distance combinators

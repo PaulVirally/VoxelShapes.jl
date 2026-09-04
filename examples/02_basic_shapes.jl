@@ -1,9 +1,8 @@
 # 02_basic_shapes.jl
 #
-# A tour of every built-in shape. Each is rasterized into its own geometry
-# so they can be shown side-by-side. The z = 0.5 slice is a reasonable
-# cross-section for all of them except the capsule, which is viewed end-on
-# along z, so we take a y-slice instead.
+# A tour of every built-in shape. Each one is rasterized on its own so they
+# can sit side-by-side. The z = 0.5 slice works for all of them except the
+# capsule, which points along z, so that one gets a y-slice instead.
 #
 # Shapes covered: Sphere, Ellipsoid, Cuboid, Cylinder, Torus, Capsule,
 # Cone (frustum), HalfSpace, Slab.

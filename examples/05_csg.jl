@@ -8,8 +8,8 @@
 #   csg_diff(a, b)       a AND NOT b (a with b carved out)
 #   csg_complement(a)    NOT a (everything outside a; rarely rendered alone)
 #
-# Fill always delegates to the first (left) operand. You can chain CSG
-# operations to build complex shapes from simple primitives.
+# Fill always comes from the first (left) operand. You can chain these to
+# build complex shapes from simple ones.
 
 using VoxelShapes
 using GLMakie

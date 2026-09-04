@@ -10,20 +10,20 @@ using ..Interpolations: interp_init, interp_accumulate, interp_finalize
 """
     aa(shape, voxel_center_xyz, voxel_size_xyz, background, anti_alias) -> value
 
-Compute the rasterized value for a single voxel given an anti-aliasing strategy.
+Compute the rasterized value for one voxel.
 
-Returns `background` when the voxel is outside the shape, or a blended value
-on the boundary according to the chosen `anti_alias` method.
+# Returns
+- `background` outside the shape, a blended value on the boundary
 """
 function aa end
 
 """
     NoAntiAliasing <: AbstractAntiAliasing
 
-Point-sampled rasterization with no blending.
+Point-sampled rasterization, tested at the voxel center.
 
-Each voxel is either fully inside the shape (returns `fill(shape, ...)`) or
-fully outside (returns `background`), tested at the voxel center.
+# Returns
+- `fill(shape, ...)` inside the shape, `background` outside
 """
 struct NoAntiAliasing <: AbstractAntiAliasing end
 
@@ -40,11 +40,7 @@ end
 Anti-aliasing by averaging over a regular sub-grid within each voxel.
 
 # Fields
-- `super_grid`: number of sub-samples along each axis. A value of `(n, n, n)`
-  produces n³ samples per voxel.
-
-Construct with `SuperResolutionAntiAliasing(n)` for an isotropic n³ grid,
-or `SuperResolutionAntiAliasing((nx, ny, nz))` for an anisotropic one.
+- `super_grid`: sub-samples per axis, `(n, n, n)` gives n³ per voxel
 """
 struct SuperResolutionAntiAliasing <: AbstractAntiAliasing
     super_grid::NTuple{3, Int}
@@ -77,15 +73,11 @@ end
 """
     GaussianAntiAliasing{Nx, Ny, Nz, T} <: AbstractAntiAliasing
 
-Anti-aliasing using a separable Gaussian kernel.
+Anti-aliasing using a separable Gaussian kernel, pre-normalized to sum to one.
 
-The kernel is pre-normalized so weights sum to one. Each voxel is sampled
-at `Nx × Ny × Nz` points spaced one voxel apart, weighted by the product of
-per-axis Gaussian weights.
-
-Construct with `GaussianAntiAliasing(σ, kernel_size)` for isotropic smoothing,
-or `GaussianAntiAliasing((σx, σy, σz), (Nx, Ny, Nz))` for anisotropic.
-Kernel sizes must be odd.
+# Fields
+- `kernel_data`: per-axis weights, `Nx × Ny × Nz` samples spaced one voxel
+  apart, weighted by the product of per-axis weights. Sizes must be odd.
 """
 struct GaussianAntiAliasing{Nx, Ny, Nz, T} <: AbstractAntiAliasing
     kernel_data::Tuple{SVector{Nx, T}, SVector{Ny, T}, SVector{Nz, T}}
@@ -124,16 +116,13 @@ end
 """
     SubpixelAntiAliasing <: AbstractAntiAliasing
 
-Analytic coverage estimate using the signed distance function. O(1) per voxel,
-GPU-safe.
+Analytic coverage estimate from the signed distance function, O(1) per voxel.
 
-Approximates the fraction of the voxel inside the shape as a linear ramp through
-the SDF value at the voxel center, normalized by half the voxel diagonal. The
-boundary is assumed locally planar; accuracy degrades when voxel size approaches
-the surface's radius of curvature. Coverage is slightly approximate for
-anisotropic voxels.
-
-Requires `sdf(shape, point)` to be implemented.
+Approximates the fraction of the voxel inside the shape. It ramps linearly
+through the SDF value at the voxel center, normalized by half the voxel
+diagonal. Assumes the boundary is locally planar. Accuracy degrades as voxel
+size approaches the surface's radius of curvature. Coverage is approximate
+for anisotropic voxels. Requires `sdf(shape, point)`.
 """
 struct SubpixelAntiAliasing <: AbstractAntiAliasing end
 
@@ -152,12 +141,12 @@ end
 """
     AdaptiveAntiAliasing{A<:AbstractAntiAliasing} <: AbstractAntiAliasing
 
-Wrapper that skips the inner anti-aliasing stencil for voxels clearly inside or
-outside the shape.
+Skips the inner anti-aliasing stencil for voxels clearly inside or outside
+the shape.
 
-When `has_exact_sdf(shape)` is `true`, a single SDF evaluation determines
-whether the voxel is at least half a diagonal away from the surface. Only
-boundary voxels fall through to the wrapped `inner` strategy.
+If `has_exact_sdf(shape)` is `true`, one SDF evaluation checks whether the
+voxel is at least half a diagonal from the surface. Only boundary voxels
+fall through to `inner`.
 
 # Fields
 - `inner`: the anti-aliasing method applied to boundary voxels

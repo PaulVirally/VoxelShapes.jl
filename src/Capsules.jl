@@ -14,17 +14,12 @@ using ..Interpolations: LinearInterpolation
 Rounded rod (Minkowski sum of a line segment and a sphere) defined by two
 endpoints `a`, `b` and a tube radius.
 
-A point is inside when its distance to segment `ab` is at most `radius`.
-The `fill_function` receives local coordinates `(dist_to_segment/radius, t, 0)`,
-where `t ∈ [0, 1]` is the projection parameter along the segment.
-
-Has an exact SDF.
-
 # Fields
 - `a`: first segment endpoint in world space
 - `b`: second segment endpoint in world space
 - `radius`: tube radius
-- `fill_function`: callable mapping local coordinates to a fill value
+- `fill_function`: maps local coords `(dist_to_segment/radius, t, 0)` to a
+  fill value, `t ∈ [0, 1]` along the segment
 - `interpolation`: blending strategy for anti-aliasing
 """
 struct FillableCapsule{T, F, I<:AbstractInterpolation} <: AbstractFillableShape

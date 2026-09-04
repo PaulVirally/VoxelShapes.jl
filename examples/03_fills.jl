@@ -1,13 +1,9 @@
 # 03_fills.jl
 #
-# Fill functions control what value a voxel gets once it's inside a shape.
-# The default is a constant (the fill_val argument to every shape constructor).
-# ConstantFill, RadialGradient, and AxialGradient let you vary the value
-# spatially across the shape's volume.
-#
-# Because the convenience constructors only accept a constant value, gradient
-# fills require passing the fill function directly via the inner struct
-# constructor. StaticArrays.SVector is used for the center and radii fields.
+# A fill function sets the value a voxel gets once it's inside a shape:
+# ConstantFill, RadialGradient, or AxialGradient. Gradients need the inner
+# struct constructor; the convenience constructors only take a constant
+# value.
 
 using VoxelShapes
 using StaticArrays: SVector
@@ -30,7 +26,8 @@ f_radial = RadialGradient(1.0, 0.0)   # bright core, dark shell
 sphere_radial = FillableEllipsoid{Float64,typeof(f_radial),typeof(interp)}(c, r, f_radial, interp)
 
 # AxialGradient: interpolates along one local axis of the shape.
-# Axis 3 is the z-axis for an ellipsoid; local z goes from -1 (bottom) to +1 (top).
+# Axis 3 is the z-axis for an ellipsoid. Local z goes from -1 (bottom) to +1
+# (top).
 f_axial = AxialGradient(3, 0.0, 1.0)  # dark bottom, bright top
 sphere_axial = FillableEllipsoid{Float64,typeof(f_axial),typeof(interp)}(c, r, f_axial, interp)
 

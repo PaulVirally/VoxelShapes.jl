@@ -4,16 +4,15 @@
 # surface. Zoom in on a sphere edge to see the difference.
 #
 # NoAntiAliasing:              hard on/off at the voxel center.
-# SuperResolutionAntiAliasing: subdivides each voxel into sub-samples,
-#                              averages the results. Accurate but slow.
+# SuperResolutionAntiAliasing: splits each voxel into sub-samples and
+#                              averages them. Accurate but slow.
 # SubpixelAntiAliasing:        uses the signed distance function (SDF) to
-#                              estimate surface coverage analytically. O(1),
-#                              GPU-safe.
-# AdaptiveAntiAliasing:        skips the sub-sampling stencil for voxels
-#                              clearly inside or outside; only boundary voxels
-#                              pay the full cost. Wraps any other strategy.
-# GaussianAntiAliasing:        convolves the boundary with a Gaussian kernel.
-#                              Produces a soft edge rather than a crisp one.
+#                              estimate surface coverage. O(1), GPU-safe.
+# AdaptiveAntiAliasing:        skips sub-sampling for voxels clearly inside
+#                              or outside. Only boundary voxels pay the full
+#                              cost. Wraps any other strategy.
+# GaussianAntiAliasing:        blurs the boundary with a Gaussian kernel for
+#                              a soft edge instead of a crisp one.
 
 using VoxelShapes
 using GLMakie

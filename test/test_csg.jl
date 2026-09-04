@@ -30,7 +30,8 @@
         @test (0.75, 0.0, 0.0) in i        # in both (overlap region)
         @test !((0.0, 0.0, 0.0) in i)      # in A only
         @test !((1.5, 0.0, 0.0) in i)      # in B only
-        @test fill(i, (0.75, 0.0, 0.0), (1.0, 1.0, 1.0)) == 1.0  # delegates to A
+        # delegates to A
+        @test fill(i, (0.75, 0.0, 0.0), (1.0, 1.0, 1.0)) == 1.0
     end
 
     @testset "difference: in a but not b" begin

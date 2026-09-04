@@ -47,7 +47,7 @@ struct _DummyShape <: AbstractFillableShape end
     end
 
     @testset "FillableCuboid / FillableCube" begin
-        c = FillableCube((0.0, 0.0, 0.0), 2.0, 9.0)   # side length 2 -> half-length 1
+        c = FillableCube((0.0, 0.0, 0.0), 2.0, 9.0)   # side length 2, half-length 1
         @test half_lengths(c) == SVector(1.0, 1.0, 1.0)
         @test lengths(c) == SVector(2.0, 2.0, 2.0)
         @test center(c) == SVector(0.0, 0.0, 0.0)
@@ -68,12 +68,12 @@ struct _DummyShape <: AbstractFillableShape end
         # exact SDF: signed Euclidean distance to the box surface
         @test has_exact_sdf(c) == true
         @test sdf(c, (2.0, 0.0, 0.0)) ≈ 1.0      # 1 unit outside the +x face
-        @test sdf(c, (0.0, 0.0, 0.0)) ≈ -1.0     # 1 unit inside (to nearest face)
+        @test sdf(c, (0.0, 0.0, 0.0)) ≈ -1.0     # 1 unit inside, to nearest face
         @test sdf(c, (1.0, 0.0, 0.0)) ≈ 0.0      # on the surface
     end
 
     @testset "FillableCylinder" begin
-        cyl = FillableCylinder((0.0, 0.0, 0.0), 1.0, 2.0, 3.0)  # axis=3 (z), fill 3
+        cyl = FillableCylinder((0.0, 0.0, 0.0), 1.0, 2.0, 3.0)  # axis=3, fill 3
         @test radius(cyl) == 1.0
         @test half_height(cyl) == 2.0
         @test center(cyl) == SVector(0.0, 0.0, 0.0)
@@ -86,7 +86,7 @@ struct _DummyShape <: AbstractFillableShape end
         @test fill(cyl, (0.0, 0.0, 0.0), (VS, VS, VS)) == 3.0
 
         @test has_exact_sdf(cyl) == true
-        @test sdf(cyl, (2.0, 0.0, 0.0)) ≈ 1.0    # 1 unit outside curved surface
+        @test sdf(cyl, (2.0, 0.0, 0.0)) ≈ 1.0    # 1 unit outside the curved face
         @test sdf(cyl, (0.0, 0.0, 3.0)) ≈ 1.0    # 1 unit beyond end cap
         @test sdf(cyl, (0.0, 0.0, 0.0)) < 0      # interior
 
@@ -114,7 +114,8 @@ struct _DummyShape <: AbstractFillableShape end
     end
 
     @testset "FillableSlab" begin
-        s = FillableSlab((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 1.0, 7.0)  # half_thickness 1
+        # half_thickness 1
+        s = FillableSlab((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 1.0, 7.0)
         @test (0.0, 0.0, 0.0) in s
         @test (0.0, 0.0, 1.0) in s               # on the slab face
         @test !((0.0, 0.0, 1.5) in s)
@@ -123,7 +124,8 @@ struct _DummyShape <: AbstractFillableShape end
 
         @test has_exact_sdf(s) == true
         @test sdf(s, (0.0, 0.0, 2.0)) ≈ 1.0      # 1 unit outside the slab
-        @test sdf(s, (0.0, 0.0, 0.0)) ≈ -1.0     # center, 1 unit from each face
+        # center, 1 unit from each face
+        @test sdf(s, (0.0, 0.0, 0.0)) ≈ -1.0
 
         # normal normalization
         sn = FillableSlab((0.0, 0.0, 0.0), (0.0, 0.0, 3.0), 1.0, 1.0)
@@ -183,7 +185,7 @@ struct _DummyShape <: AbstractFillableShape end
         @test fill(cap, (0.0, 0.0, 1.0), (VS, VS, VS)) == 8.0
 
         @test has_exact_sdf(cap) == true
-        @test sdf(cap, (1.0, 0.0, 1.0)) ≈ 0.5    # distance 1 to axis, minus radius
+        @test sdf(cap, (1.0, 0.0, 1.0)) ≈ 0.5    # distance 1 to axis, - radius
         @test sdf(cap, (0.0, 0.0, 1.0)) ≈ -0.5
     end
 
@@ -280,14 +282,14 @@ struct _DummyShape <: AbstractFillableShape end
         end
 
         @testset "HalfSpace" begin
-            # normal = +z: inside is z <= point z (upper-bounded above, unbounded below)
+            # normal = +z: inside is z <= point z, bounded above only
             h = FillableHalfSpace((0.0, 0.0, 2.0), (0.0, 0.0, 1.0), 1.0)
             lo, hi = bounding_box(h)
             @test lo == (-Inf, -Inf, -Inf)
             @test hi == (Inf, Inf, 2.0)
             check_conservative(h, (0.0, 0.0, -3.0), (5.0, 5.0, 5.0))
 
-            # normal = -z: inside is z >= point z (lower-bounded, unbounded above)
+            # normal = -z: inside is z >= point z, bounded below only
             h2 = FillableHalfSpace((0.0, 0.0, 2.0), (0.0, 0.0, -1.0), 1.0)
             lo2, hi2 = bounding_box(h2)
             @test lo2 == (-Inf, -Inf, 2.0)
