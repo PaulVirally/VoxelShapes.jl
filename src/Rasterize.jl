@@ -14,8 +14,8 @@ end
 Fill `arr` with the values of `geometry` at the voxel centers of `region`.
 
 # Arguments
-- `arr`: the destination array, of size `size(region)`. Backend follows its
-  type: `Array` runs on the CPU, `CuArray` on the GPU
+- `arr`: the destination array, of size `size(region)`. The kernel runs on
+  the backend `arr` lives on
 - `geometry`: the [`Geometry`](@ref) to sample
 - `region`: the [`Region`](@ref) giving the voxel centers
 - `precision::Type{<:AbstractFloat}=Float64`: floating point type the
@@ -35,32 +35,26 @@ function rasterize!(arr::AbstractArray{U,3}, geometry::Geometry, region::Region;
 end
 
 """
-    rasterize(geometry, region::Region; precision=Float64) -> Array{U,3}
-    rasterize(geometry, region::Region, ::Type{CuArray}; precision=Float64) -> CuArray{U,3}
-    rasterize(geometry, grid::CompositeGrid; precision=Float64) -> CompositeField
-    rasterize(geometry, grid::CompositeGrid, ::Type{CuArray}; precision=Float64) -> CompositeField
+    rasterize(geometry, region::Region, backend=CPU(); precision=Float64) -> AbstractArray{U,3}
+    rasterize(geometry, grid::CompositeGrid, backend=CPU(); precision=Float64) -> CompositeField
 
 Sample `geometry` at every voxel center of a grid.
 
 Over a [`Region`](@ref) the result is a dense array of size `size(region)`.
 Over a [`CompositeGrid`](@ref) it is a [`CompositeField`](@ref), one flat
-vector in the region layout order of the grid. Passing `CuArray` as the third
-argument puts the result on the GPU.
+vector in the region layout order of the grid.
 
 # Arguments
 - `geometry`: the [`Geometry`](@ref) to sample
 - `region` or `grid`: where to sample
+- `backend=CPU()`: the KernelAbstractions backend to allocate the result on,
+  such as `CUDABackend()` or `MetalBackend()`
 - `precision::Type{<:AbstractFloat}=Float64`: floating point type the exact
   rational geometry converts to. Must match the `T` of the shapes
 """
-function rasterize(geometry::Geometry, region::Region; precision::Type{<:AbstractFloat}=Float64)
-    arr = Array{eltype(geometry),3}(undef, size(region))
-    return rasterize!(arr, geometry, region; precision=precision)
-end
-
-function rasterize(geometry::Geometry, region::Region, ::Type{CuArray};
+function rasterize(geometry::Geometry, region::Region, backend::Backend=CPU();
                    precision::Type{<:AbstractFloat}=Float64)
-    arr = CuArray{eltype(geometry),3}(undef, size(region))
+    arr = KernelAbstractions.allocate(backend, eltype(geometry), size(region))
     return rasterize!(arr, geometry, region; precision=precision)
 end
 
@@ -98,14 +92,9 @@ function CompositeField(data::AbstractVector{U}, grid::CompositeGrid) where {U}
     return CompositeField{U,typeof(data)}(data, grid, offsets)
 end
 
-function rasterize(geometry::Geometry, grid::CompositeGrid; precision::Type{<:AbstractFloat}=Float64)
-    field = CompositeField(Vector{eltype(geometry)}(undef, length(grid)), grid)
-    return rasterize!(field, geometry; precision=precision)
-end
-
-function rasterize(geometry::Geometry, grid::CompositeGrid, ::Type{CuArray};
+function rasterize(geometry::Geometry, grid::CompositeGrid, backend::Backend=CPU();
                    precision::Type{<:AbstractFloat}=Float64)
-    field = CompositeField(CuVector{eltype(geometry)}(undef, length(grid)), grid)
+    field = CompositeField(KernelAbstractions.allocate(backend, eltype(geometry), length(grid)), grid)
     return rasterize!(field, geometry; precision=precision)
 end
 

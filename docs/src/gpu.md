@@ -4,15 +4,18 @@ Rasterization runs on GPU with a single call:
 
 ```julia
 using CUDA
-arr = rasterize(geometry, region, CuArray)   # returns a CuArray{T, 3}
+arr = rasterize(geometry, region, CUDABackend())   # returns a CuArray{T, 3}
 ```
 
 The kernel (`fill_voxel!`) is written with
-[KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl)
-and dispatches to `CUDABackend()` automatically. `rasterize(geometry,
-region)` runs the same kernel on CPU. `rasterize(geometry, grid, CuArray)`
-does the same over a `CompositeGrid`, region by region. It returns a
-`CompositeField` whose `data` lives on the GPU.
+[KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl),
+so `backend` can be any of its backends, such as `CUDABackend()` (`using CUDA`)
+or `MetalBackend()` (`using Metal`). VoxelShapes does not depend on a GPU
+package: load the one you need. Metal has no `Float64`, so use `Float32`
+shapes and `precision=Float32`. `rasterize(geometry, region)` runs the same
+kernel on `CPU()`. `rasterize(geometry, grid, backend)` does the same over a
+`CompositeGrid`, region by region. It returns a `CompositeField` whose `data`
+lives on that backend.
 
 ## The `isbits` constraint
 
@@ -54,7 +57,7 @@ sphere = FillableSphere((0.5f0, 0.5f0, 0.5f0), 0.3f0, 1.0f0)
 geometry  = Geometry([sphere], 0.0f0, SubpixelAntiAliasing())
 region = Region((N, N, N), (1 // N, 1 // N, 1 // N), (1 // 2, 1 // 2, 1 // 2))
 
-arr = rasterize(geometry, region, CuArray; precision=Float32)   # runs on GPU
+arr = rasterize(geometry, region, CUDABackend(); precision=Float32)   # runs on GPU
 ```
 
 Use `Float32` where you can. It packs twice as densely as `Float64` in GPU

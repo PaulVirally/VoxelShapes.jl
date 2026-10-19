@@ -1,6 +1,7 @@
 using Test
 using Aqua
 using VoxelShapes
+using KernelAbstractions
 using StaticArrays
 using LinearAlgebra: norm
 
@@ -32,5 +33,5 @@ using LinearAlgebra: norm
     include("test_integration.jl")
 
     # --- GPU ---
-    include("test_cuda.jl")
+    include("test_backends.jl")
 end
