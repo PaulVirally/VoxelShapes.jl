@@ -43,6 +43,7 @@
         sphere = FillableSphere((1.5, 1.5, 1.5), 0.6, 1.0)
         arr = rasterize(Geometry([sphere], 0.0), unitgrid())
         @test arr isa Array{Float64,3}
+        @test rasterize(Geometry([sphere], 0.0), unitgrid(), CPU())::Array == arr
         @test size(arr) == (3, 3, 3)
         @test arr[2, 2, 2] == 1.0
         @test sum(arr) == 1.0             # exactly one voxel filled

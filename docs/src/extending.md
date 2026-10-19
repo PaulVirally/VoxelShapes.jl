@@ -70,7 +70,7 @@ VoxelShapes.has_exact_sdf(::MyBox) = true
 
 ## GPU compatibility
 
-For a shape to work with `rasterize(geometry, region, CuArray)`, the
+For a shape to work with `rasterize(geometry, region, CUDABackend())`, the
 struct must be `isbits`. Avoid heap-allocated fields: arrays, strings,
 arbitrary closures. Use `StaticArrays.SVector` for fixed-size vectors and
 `NTuple` for fixed-size tuples.

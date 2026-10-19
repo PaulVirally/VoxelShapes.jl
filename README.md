@@ -171,7 +171,7 @@ The last two implement interpolation schemes from computational electrodynamics.
 
 ```julia
 using CUDA
-arr = rasterize(geometry, region, CuArray) # runs the rasterization kernel on the GPU
+arr = rasterize(geometry, region, CUDABackend()) # runs the rasterization kernel on the GPU
 ```
 
 The geometry, all shapes, and all fill functions must be `isbits`-compatible.

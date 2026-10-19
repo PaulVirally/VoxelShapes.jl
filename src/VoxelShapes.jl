@@ -3,7 +3,6 @@ module VoxelShapes
 export add_shape
 
 using KernelAbstractions
-using CUDA
 
 include("Types.jl")
 using .Types
